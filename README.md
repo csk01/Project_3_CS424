@@ -1,5 +1,8 @@
 # CS424 Project-3 - Big Yellow Taxi
 
+## Progress Updates
+https://docs.google.com/document/d/1Cr5pgf55RwBvRA15CWBftYkJBapVLAhWJOYZ0Kni0uU/edit#
+
 ## Visualization Link: 
 
 ## INSTALL INSTRUCTIONS
