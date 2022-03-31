@@ -1,7 +1,6 @@
-# cs424_project3
-CS424 Project-3 - Big Yellow Taxi
+# CS424 Project-3 - Big Yellow Taxi
 
-## Shiny App link
+## Visualization Link: 
 
 ## INSTALL INSTRUCTIONS
 ## How to run locally 
@@ -14,4 +13,7 @@ CS424 Project-3 - Big Yellow Taxi
 12. Open R studio and navigate to the above directory, open app.R and run it.  R studio will compile and ask you to install the needed libraries.
 13. If you face any errors in the above step, ensure step 4 is completed. For more info refer https://www.rdocumentation.org/packages/utils/versions/3.6.2/topics/install.packages
 14. Run the app.R file by pressing the run button at the top-right of the RStudio window
+
+## Shiny App
+To create interactive web app, publish the code to R Shiny from R Studio
 
