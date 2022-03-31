@@ -4,7 +4,6 @@ CS424 Project-3 - Big Yellow Taxi
 ## Shiny App link
 
 ## INSTALL INSTRUCTIONS
-
 ## How to run locally 
 1. Clone repo by downloading it as a .zip file then unzipping it or use git clone command in terminal: git clone - 
 2. Download R from https://www.r-project.org/
