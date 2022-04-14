@@ -1,5 +1,3 @@
-######## PREPROCESSING 
-
 setwd("C:/Users/Krishnan CS/424_Project3")
 getwd()
 
