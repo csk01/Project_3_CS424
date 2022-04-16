@@ -50,7 +50,7 @@ values <- 1:58
 #assigning the hash
 assign_hash(keys, values, hash)
 
-#Checking
+#For retreiving values
 #get_hash('Flash Cab', hash)
 #hash[["24 Seven Taxi"]]
 
@@ -61,14 +61,13 @@ head(taxi)
 #Converting timestamp from char to posix
 taxi$Trip.Start.Timestamp <- strptime(taxi$Trip.Start.Timestamp, "%m/%d/%Y %I:%M:%S %p")
 
-#Taking only the starting hour rather than the 15 minute intervals in 24hr format(removing min,sec and AM/PM)
-taxi$Trip.Start.Timestamp <- strftime(taxi$Trip.Start.Timestamp, "%m/%d/%Y %H")
+#Creating a separate col and storing only the starting hour rather than the 15 minute intervals in 24hr format(removing min,sec and AM/PM)
+taxi_date_removed$Hour <- strftime(taxi_date_removed$Trip.Start.Timestamp, "%H")
 
-#Converting trip.Miles from float to integer
-taxi$Trip.Miles <- as.integer(100*(taxi$Trip.Miles)) 
-head(taxi)
+#Converting to char and storing only the date
+taxi$Trip.Start.Timestamp <- strftime(taxi$Trip.Start.Timestamp, "%m/%d/%Y")
 
-#Converting N/A in Community Area code to 0
+#Converting NAs in Community Area code to 0 to save some more space
 taxi$Pickup.Community.Area[is.na(taxi$Pickup.Community.Area)] <- 0
 taxi$Dropoff.Community.Area[is.na(taxi$Dropoff.Community.Area)] <- 0
 
