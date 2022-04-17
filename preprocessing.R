@@ -62,7 +62,7 @@ head(taxi)
 taxi$Trip.Start.Timestamp <- strptime(taxi$Trip.Start.Timestamp, "%m/%d/%Y %I:%M:%S %p")
 
 #Creating a separate col and storing only the starting hour rather than the 15 minute intervals in 24hr format(removing min,sec and AM/PM)
-taxi_date_removed$Hour <- strftime(taxi_date_removed$Trip.Start.Timestamp, "%H")
+taxi$Hour <- strftime(taxi$Trip.Start.Timestamp, "%H")
 
 #Converting to char and storing only the date
 taxi$Trip.Start.Timestamp <- strftime(taxi$Trip.Start.Timestamp, "%m/%d/%Y")
@@ -72,7 +72,7 @@ taxi$Pickup.Community.Area[is.na(taxi$Pickup.Community.Area)] <- 0
 taxi$Dropoff.Community.Area[is.na(taxi$Dropoff.Community.Area)] <- 0
 
 #Splitting data file into smaller chunks
-no_of_chunks <- 25
+no_of_chunks <- 15
 split_vector <- ceiling(1: nrow(taxi)/nrow(taxi) * no_of_chunks)
 res <- split(taxi, split_vector)
 map2(res, paste0("part_", names(res), ".csv"), write.csv)
