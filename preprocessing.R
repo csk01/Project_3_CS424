@@ -15,11 +15,11 @@ library(pryr)
 taxi <- read.table(file = "Taxi_Trips_-_2019.tsv", sep = "\t", header = TRUE, quote = "\"")
 
 #Basic stats/EDA
-head(taxi)
-colnames(taxi)
-summary(taxi)
-str(taxi)
-dim(taxi)
+# head(taxi)
+# colnames(taxi)
+# summary(taxi)
+# str(taxi)
+# dim(taxi)
 
 #Retaining only necessary columns and removing unwanted ones
 taxi <- select(taxi, Trip.Start.Timestamp, Trip.Seconds, Trip.Miles, Pickup.Community.Area, Dropoff.Community.Area, Company )
@@ -64,16 +64,24 @@ taxi$Trip.Start.Timestamp <- strptime(taxi$Trip.Start.Timestamp, "%m/%d/%Y %I:%M
 #Creating a separate col and storing only the starting hour rather than the 15 minute intervals in 24hr format(removing min,sec and AM/PM)
 taxi$Hour <- strftime(taxi$Trip.Start.Timestamp, "%H")
 
-#Converting to char and storing only the date
-taxi$Trip.Start.Timestamp <- strftime(taxi$Trip.Start.Timestamp, "%m/%d/%Y")
+#Storing only the date as hour is separately stored
+taxi$Trip.Start.Timestamp <- strptime(taxi$Trip.Start.Timestamp, "%Y-%m-%d")
 
 #Converting NAs in Community Area code to 0 to save some more space
-taxi$Pickup.Community.Area[is.na(taxi$Pickup.Community.Area)] <- 0
-taxi$Dropoff.Community.Area[is.na(taxi$Dropoff.Community.Area)] <- 0
+#taxi$Pickup.Community.Area[is.na(taxi$Pickup.Community.Area)] <- 0
+#taxi$Dropoff.Community.Area[is.na(taxi$Dropoff.Community.Area)] <- 0
+
+#Renaming cols before chunking
+taxi <- taxi %>%
+  rename( Date = Trip.Start.Timestamp,
+         Duration = Trip.Seconds,
+         Miles = Trip.Miles,
+          Pickup = Pickup.Community.Area,
+          Dropoff = Dropoff.Community.Area)
 
 #Splitting data file into smaller chunks
 no_of_chunks <- 15
 split_vector <- ceiling(1: nrow(taxi)/nrow(taxi) * no_of_chunks)
 res <- split(taxi, split_vector)
-map2(res, paste0("part_", names(res), ".csv"), write.csv)
+map2(res, paste0("part_", names(res), ".csv"), write.csv, row.names=FALSE)
 
