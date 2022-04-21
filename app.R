@@ -230,66 +230,73 @@ ui <- dashboardPage(
                                        box( title = textOutput("text"), solidHeader = TRUE, status = "primary", width = 12,
                                             plotOutput("hist1", height="34vh"), height="40vh")
                                 ),
-                                column(2,
+                                column(1,
                                        box(solidHeader = TRUE, status = "primary", width = 180,
-                                           DT::dataTableOutput("dailyTable")
+                                           DT::dataTableOutput("dailyTable"), height="40vh"
                                        )
                                 ),
-                                column(4,
+                                column(3,
                                        box( title = "something", solidHeader = TRUE, status = "primary", width = 12,
                                             plotOutput("histHourly", height="34vh"), height="40vh")
                                 ),
-                                column(2,
+                                column(1,
                                        box(solidHeader = TRUE, status = "primary", width = 180, title="table for hourly",
-                                           dataTableOutput("hourlyTable")
+                                           dataTableOutput("hourlyTable"), height="40vh"
                                        )
-                                )
-                                
-                       ),
-                       
-                       fluidRow(style='height:50vh; margin-top: 50px',
-                                fluidRow(
-                                  column(4,
+                                ),
+                                 column(2,
                                          box( title = "Days of the  Week", solidHeader = TRUE, status = "primary", width = 12,
                                               plotOutput("histDay", height="34vh"), height="40vh")
                                   ),
-                                  column(2,
+                                 column(1,
                                          box(solidHeader = TRUE, status = "primary", width = 180,
-                                             dataTableOutput("dayTable")
+                                             dataTableOutput("dayTable"), height="40vh"
                                          )
-                                  ),
-                                  column(4,
+                                  )
+                                
+                       ),
+                       
+                       fluidRow(style='height:50vh; margin-top: 100px',
+                                
+                                 column(3,
+                                        leafletOutput("main_map", height="50vh")
+                                    ),
+                                  
+                                  column(2,
                                          box( title = "Month", solidHeader = TRUE, status = "primary", width = 12,
                                               plotOutput("histMonthly", height="34vh"), height="40vh")
                                   ),
-                                  column(2,
+                                  column(1,
                                          box(solidHeader = TRUE, status = "primary", width = 180,
-                                             dataTableOutput("monthlyTable")
+                                             dataTableOutput("monthlyTable"), height="40vh"
                                          )
-                                  )
-                                ),
-                                
-                                fluidRow(
-                                  
-                                  column(4,
+                                  ),
+                                  column(2,
                                          box( title = "Binned Mileage", solidHeader = TRUE, status = "primary", width = 12,
-                                              plotOutput("histBinMile", height="34vh"), height="40vh")
+                                              plotOutput("histBinMile", height="34vh"), height="40vh"), height="40vh"
                                          
                                   ),
-                                  
-                                  column(4,
+                                  column(1,
+                                         box(solidHeader = TRUE, status = "primary", width = 180,
+                                             dataTableOutput("binTable"), height="40vh"
+                                         )
+                                  ),
+                                  column(2,
                                          box( title = "Binned Trip Time", solidHeader = TRUE, status = "primary", width = 12,
-                                              plotOutput("histTripTime", height="34vh"), height="40vh")
+                                              plotOutput("histTripTime", height="34vh"), height="40vh"), height="40vh"
+                                  ),
+                                  column(1,
+                                         box(solidHeader = TRUE, status = "primary", width = 180,
+                                             dataTableOutput("tripTable"), height="40vh"
+                                         )
                                   )
-                                  
-                                )
                                 
                                 
                                 
                                 
-                       ),
-                       fluidRow(
-                         leafletOutput("main_map")
+                                
+                                
+                                
                        )
                        
                        
