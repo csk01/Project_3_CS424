@@ -1,5 +1,5 @@
-#setwd("C:/Users/Krishnan CS/424_Project2")
-#print(getwd())
+setwd("C:/Users/Krishnan CS/424_Project3")
+print(getwd())
 
 # LIBRARIES=======================================================================================================
 library(lubridate)
@@ -17,6 +17,7 @@ library(stringr)
 library(shinyjs)
 library(data.table)
 library(purrr)
+library(rgdal)
 
 library(DT)
 
@@ -38,9 +39,22 @@ options(scipen=999)
 # READ DATA AND CONVERT TO USABLE FORMAT=======================================================================================================
 
 #Reading from the split csv files
+print("reading data")
 taxi <- do.call(rbind, lapply(list.files(pattern = "*.csv"), fread)) 
+print("read data")
 
+#Reading community boundaries from a shape file 
+# Source: https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Community-Areas-current-/cauq-8yn6
+community_shp <- rgdal::readOGR("shp_files/geo_export_fca70ba1-774b-4562-b299-3cbfe3855c4d.shp",
+  layer = "geo_export_fca70ba1-774b-4562-b299-3cbfe3855c4d", GDAL1_integer64_policy = TRUE)
 
+print("read shp file")
+
+#labels for each community 
+labels <- sprintf(
+  "<strong>%s</strong><br/>",
+  community_shp$community
+) %>% lapply(htmltools::HTML)
 #PREPROCESSING=================================================================================
 
 #init hash
@@ -73,7 +87,7 @@ assign_hash(keys, values, hash)
 
 
 
-#Community areas list 
+#Community areas list to access Later
 community_areas <- c("Rogers Park", "West Ridge","Uptown","Lincoln Square","North Center","Lake View","Lincoln Park", "Near North Side", "Edison Park",
                      "Norwood Park","Jefferson Park","Forest Glen","North Park","Albany Park","Portage Park","Irving Park","Dunning","Montclare","Belmont Cragin",
                      "Hermosa","Avondale","Logan Square","Humboldt Park","West Town","Austin","West Garfield Park","East Garfield Park","Near West Side",
@@ -81,7 +95,7 @@ community_areas <- c("Rogers Park", "West Ridge","Uptown","Lincoln Square","Nort
                      "Grand Boulevard","Kenwood","Washington Park","Hyde Park","Woodlawn","South Shore","Chatham","Avalon Park","South Chicago","Burnside",
                      "Calumet Heights","Roseland","Pullman","South Deering","East Side","West Pullman","Riverdale","Hegewisch","Garfield Ridge","Archer Heights",
                      "Brighton Park","McKinley Park","Bridgeport","New City","West Elsdon","Gage Park","Clearing","West Lawn","Chicago Lawn","West Englewood",
-                     "Englewood","Greater Grand Crossing","Ashburn","Auburn Gresham","Beverly","Washington Heights","Mount Greenwood","Morgan Park","O'Hare","Edgewater")
+                     "Englewood","Greater Grand Crossing","Ashburn","Auburn Gresham","Beverly","Washington Heights","Mount Greenwood","Morgan Park","O'Hare","Edgewater","Outside Chicago")
 
 years<-c(2001:2021)
 
@@ -90,33 +104,52 @@ time_in_24 <-c( '0000',  '0100', '0200', '0300', '0400', '0500', '0600', '0070',
 
 time_in_12 <- c('00:00 am','01:00 am','02:00 am','03:00 am','04:00 am','05:00 am','06:00 am','07:00 am','08:00 am','09:00 am','10:00 am','11:00 am','12:00 pm','13:00 pm','14:00 pm','15:00 pm','16:00 pm','17:00 pm','18:00 pm','19:00 pm','20:00 pm','21:00 pm','22:00 pm','23:00 pm')
 
-months <- c('Januray', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'Novermber', 'December')
+months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'Novermber', 'December')
 
 
 # Summarize the number of taxi rides by day
 daily_rides <- taxi %>%
   group_by(Date) %>%
   summarise(n_rides = n())
+
+print("daily summarized")
+
+# Summarize the number of taxi rides by hour
 hourly_rides <- taxi %>%
   group_by(Hour) %>%
   summarise(n_rides = n())
+
+print("hourly summarized")
+
+# Summarize the number of taxi rides by day of the week
 weekdays_rides <- taxi %>%
-  group_by(weekdays(Date)) %>%
+  group_by(wday(Date)) %>%
   summarise(n_rides = n())
+
+print("wday summarized")
+
+# Summarize the number of taxi rides by month
 month_rides <- taxi %>%
   group_by(month(Date)) %>%
   summarise(n_rides = n())
 
+print("monthly summarized")
+
 month_rides <- rename(month_rides, "newMonth" = "month(Date)" )
 
+print("renaming")
+
+#defining basic leaflet map to add on to later
+map_plot <- leaflet() %>%
+      addTiles() 
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
   dashboardHeader(title="Sleepy Subway"),
-  # Application title
   
+  # Application title
   dashboardSidebar(
-    
+    #comment
     collapsed = TRUE, 
     sidebarMenu(
       br(),br(),br(),br(), br(),br(),br(),br(), br(),br(),br(),br(), br(),br(),br(),br(), 
@@ -129,7 +162,7 @@ ui <- dashboardPage(
     )
     
   ),
-  
+   
   
   dashboardBody(
     
@@ -227,7 +260,10 @@ ui <- dashboardPage(
                                 
                                 
                                 
-                       )   
+                       ),
+                       fluidRow(
+                         leafletOutput("main_map")
+                       )
                        
                        
                        
@@ -274,7 +310,7 @@ ui <- dashboardPage(
                               
                               fluidRow(style="height: 40vh", 
                                        
-                                       leafletOutput("mymap2")
+                                      #  leafletOutput("mymap2")
                               )
                               
                        ),
@@ -382,8 +418,8 @@ server <- function(input, output, session) {
   
   
   output$hist1 <- renderPlot({
-    
-    ggplot(data = daily_rides, aes(x = Date, y = n_rides)) +
+    print("Daily plot")
+    g<- ggplot(data = daily_rides, aes(x = Date, y = n_rides)) +
       geom_bar(stat="identity", fill="steelblue") +
       labs(title = "Taxi Rides per Day for the year of 2019",
            #subtitle = sub,
@@ -391,33 +427,62 @@ server <- function(input, output, session) {
            y = "Rides") +
       scale_x_date(date_labels = "%d-%b", breaks = date_breaks("months"),date_minor_breaks="days" ) +
       scale_y_continuous(labels = scales::comma)   
+      print("plotted daily plot")
+    return(g)
   })
   
+  output$main_map <- renderLeaflet({
+    print("map")
+      map_plot %>%
+      addPolygons( data = community_shp,
+                        color = "#444444",
+                        weight = 1, 
+                        smoothFactor = 0.5,
+                        opacity = 1.0,
+                        fillOpacity = 0.65,
+                        dashArray = "3",
+                        highlightOptions = highlightOptions(color = "white", 
+                                                            weight = 2,
+                                                            dashArray = "",
+                                                            bringToFront = TRUE),
+                        popup=labels,
+                        label = labels,
+                  
+                  
+                )
+      print("plotted map")
+      return(map_plot)
+  })
   
   output$histHourly <- renderPlot({
     
-    ggplot(data = hourly_rides, aes(x = factor(Hour), y = n_rides)) +
+    g <- ggplot(data = hourly_rides, aes(x = factor(Hour), y = n_rides)) +
       geom_bar(stat="identity", fill="steelblue") +
       labs(title = "Taxi Rides per Day for the year of 2019",
            #subtitle = sub,
            x = "Hour", 
            y = "Rides") +
-      
-      scale_y_continuous(labels = scales::comma) + scale_x_discrete(labels = time_in_12, guide=guide_axis( angle = 45))
+          scale_y_continuous(labels = scales::comma) + scale_x_discrete(labels = time_in_12, guide=guide_axis( angle = 45))
+          print("plotted hourly")
+        return(g)
   })
   
   
   output$histDay <- renderPlot({
     dft <- taxi
     f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
-    ggplot(dft, aes(x= f)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="count", position="dodge", fill="deepskyblue4")  
+    g<- ggplot(dft, aes(x= f)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="count", position="dodge", fill="deepskyblue4")  
+    print("plotting day of the week")
+        return(g)
   })
   
   
   
   
   output$histMonthly <- renderPlot({
-    ggplot(month_rides, aes(x= factor(newMonth), y= n_rides ) ) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = months, guide=guide_axis( angle = 45))
+    g <- ggplot(month_rides, aes(x= factor(newMonth), y= n_rides)) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = months, guide=guide_axis( angle = 45))
+    print("plotting monthly")
+    return(g)
   })
   
   
@@ -449,7 +514,7 @@ server <- function(input, output, session) {
     
     datatable(hourly_rides, 
               options = list(
-                searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15)
+                searching = FALSE,pageLength = 5, lengthMenu = c(5, 10, 15)
               )) %>% 
       formatCurrency(2, currency = "", interval = 3, mark = ",")
     
@@ -462,7 +527,7 @@ server <- function(input, output, session) {
     
     datatable(weekdays_rides, 
               options = list(
-                searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
+                searching = FALSE,pageLength = 7, lengthMenu = c(5, 10, 15),
                 order = list(list(1, 'asc'))
               )) %>% 
       formatCurrency(2, currency = "", interval = 3, mark = ",")
@@ -476,7 +541,7 @@ server <- function(input, output, session) {
     
     datatable(taxi, 
               options = list(
-                searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
+                searching = FALSE,pageLength = 12,
                 order = list(list(1, 'asc'))
               )) %>% 
       formatCurrency(2, currency = "", interval = 3, mark = ",")
