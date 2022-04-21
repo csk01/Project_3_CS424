@@ -1,6 +1,3 @@
-#setwd("C:/Users/Krishnan CS/424_Project3")
-#print(getwd())
-
 # LIBRARIES=======================================================================================================
 library(lubridate)
 # library(DT)
@@ -22,7 +19,7 @@ library(rgdal)
 library(DT)
 
 
-jsCode <- 'shinyjs.markerClick = function(id) {
+jsCode <- 'shinyjs.shapeClick = function(id) {
               try{map.eachLayer(function (layer) {
                 if (layer.options.layerId == id) {
                   layer.fire("click");
@@ -83,8 +80,7 @@ assign_hash(keys, values, hash)
 #To extract value 
 #hash[["1"]]
 
-
-
+#Credits for below code snippet: https://stackoverflow.com/questions/70288989/programatically-trigger-marker-mouse-click-event-in-r-leaflet-for-shiny
 
 
 #Community areas list to access Later
@@ -141,11 +137,25 @@ print("renaming")
 
 #defining basic leaflet map to add on to later
 map_plot <- leaflet() %>%
-  addTiles() 
+  addProviderTiles("OpenStreetMap") %>%
+  addPolygons( data = community_shp,
+    color = "#444444",
+    weight = 1, 
+    smoothFactor = 0.5,
+     opacity = 1.0,
+     fillOpacity = 0.65,
+     dashArray = "3",
+     highlightOptions = highlightOptions(color = "white",
+     weight = 2,
+     dashArray = "",
+     bringToFront = TRUE),
+    #popup=labels,
+     label = labels,
+     layerId = ~community_shp$area_numbe)
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
-  dashboardHeader(title="Sleepy Subway"),
+  dashboardHeader(title = "Big Yellow Taxi"),
   
   # Application title
   dashboardSidebar(
@@ -172,6 +182,8 @@ ui <- dashboardPage(
               
               
               fluidRow(
+                shinyjs::useShinyjs(),
+                shinyjs::extendShinyjs(text = jsCode, functions = c('shapeClick')),
                 
                 column(1,
                        
@@ -369,10 +381,7 @@ ui <- dashboardPage(
               p("Reference for R functions through https://shiny.rstudio.com/reference/shin")
       )
       
-    ),
-    
-    shinyjs::useShinyjs(),
-    shinyjs::extendShinyjs(text = jsCode, functions = c('markerClick'))
+    )
   )
   
   
@@ -446,31 +455,47 @@ server <- function(input, output, session) {
     return(g)
   })
   
-  output$main_map <- renderLeaflet({
-    print("map")
-    map_plot %>%
-      addPolygons( data = community_shp,
-                   color = "#444444",
-                   weight = 1, 
-                   smoothFactor = 0.5,
-                   opacity = 1.0,
-                   fillOpacity = 0.65,
-                   dashArray = "3",
-                   highlightOptions = highlightOptions(color = "white", 
-                                                       weight = 2,
-                                                       dashArray = "",
-                                                       bringToFront = TRUE),
-                   popup=labels,
-                   label = labels,
-                   
-                   
-      )
-    print("plotted map")
+#For the main leaflet plot
+ output$main_map <- renderLeaflet({
+    map_plot <- map_plot %>%
+    removeShape(layerId = "selected")
+      
     return(map_plot)
+  })
+
+  #Change value of Selectize input on map click
+  observeEvent(input$main_map_shape_click,{
+    print("Community cicked on map")
+    
+    #updating select-input based on map
+    click <- input$main_map_shape_click
+    community_id <- click$id
+    print(community_id)
+    print(community_areas[as.numeric(community_id)])
+    isolate(
+    updateSelectInput(session, "community", 
+                      selected = community_areas[as.numeric(community_id)])
+    )
+  })
+  
+    
+    observeEvent(input$community,{
+    print("select community chosen")
+    comm_name <- input$community
+    l <- sprintf(
+      "<strong>%s</strong><br/>",
+      comm_name
+      ) %>% lapply(htmltools::HTML)
+    comm_id <- which(community_areas == comm_name)
+    shinyjs::js$shapeClick(comm_id)
+    to_highlight <- subset(community_shp, area_numbe == comm_id)
+    leafletProxy("main_map", session) %>% 
+    removeShape(layerId = "selected") %>%
+    addPolygons(layerId = 'selection',data = to_highlight, fill =  "#D24618", color = "blue", 
+    popup = comm_name)
   })
   
   output$histHourly <- renderPlot({
-
     g <- ggplot(data = hourly_rides, aes(x = factor(Hour), y = n_rides)) +
       geom_bar(stat="identity", fill="steelblue") +
       labs(title = "Taxi Rides per Day for the year of 2019",
