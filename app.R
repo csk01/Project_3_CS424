@@ -219,14 +219,22 @@ ui <- dashboardPage(
                          width = NULL
                        )
                 ),
+
+                column(1,
+
+                        column(12,
+                                       box( title = "Heatmap", solidHeader = TRUE, status = "primary", width = 12,
+                                            plotOutput("histCommunity", height="90vh"), height="90vh"), height="80vh"
+                                )
+                    ),
                 
-                column(11, 
+                column(10, 
                        
                        
                        #### CONTROLS
                        
                        fluidRow(style='height:40vh',
-                                column(5,
+                                column(6,
                                        box( title = textOutput("text"), solidHeader = TRUE, status = "primary", width = 12,
                                             plotOutput("hist1", height="34vh"), height="40vh")
                                 ),
@@ -235,36 +243,7 @@ ui <- dashboardPage(
                                            DT::dataTableOutput("dailyTable"), height="40vh"
                                        )
                                 ),
-                                column(5,
-                                       box( title = "Heatmap", solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("histCommunity", height="34vh"), height="40vh")
-                                ),
-                                column(1,
-                                       box(solidHeader = TRUE, status = "primary", width = 180,
-                                           DT::dataTableOutput("communityTable"), height="40vh"
-                                       )
-                                )
-                                
-                                
-                                
-                       ),
-                       
-                       fluidRow(style='height:50vh; margin-top: 100px',
-                                
                                  column(2,
-                                        leafletOutput("main_map", height="50vh")
-                                    ),
-                                  
-                                  column(1,
-                                         box( title = "Month", solidHeader = TRUE, status = "primary", width = 12,
-                                              plotOutput("histMonthly", height="34vh"), height="40vh")
-                                  ),
-                                  column(1,
-                                         box(solidHeader = TRUE, status = "primary", width = 180,
-                                             dataTableOutput("monthlyTable"), height="40vh"
-                                         )
-                                  ),
-                                  column(1,
                                        box( title = "something", solidHeader = TRUE, status = "primary", width = 12,
                                             plotOutput("histHourly", height="34vh"), height="40vh")
                                 ),
@@ -273,7 +252,39 @@ ui <- dashboardPage(
                                            dataTableOutput("hourlyTable"), height="40vh"
                                        )
                                 ),
+                                column(1,
+                                         box( title = "Days of the  Week", solidHeader = TRUE, status = "primary", width = 12,
+                                              plotOutput("histDay", height="34vh"), height="40vh")
+                                  ),
+                                 column(1,
+                                         box(solidHeader = TRUE, status = "primary", width = 180,
+                                             dataTableOutput("dayTable"), height="40vh"
+                                         )
+                                  )
+                                
+                               
+                                
+                                
+                                
+                       ),
+                       
+                       fluidRow(style='height:50vh; margin-top: 100px',
+                                
+                                 column(3,
+                                        leafletOutput("main_map", height="50vh")
+                                    ),
+                                  
+                                  column(2,
+                                         box( title = "Month", solidHeader = TRUE, status = "primary", width = 12,
+                                              plotOutput("histMonthly", height="34vh"), height="40vh")
+                                  ),
                                   column(1,
+                                         box(solidHeader = TRUE, status = "primary", width = 180,
+                                             dataTableOutput("monthlyTable"), height="40vh"
+                                         )
+                                  ),
+                                 
+                                  column(2,
                                          box( title = "Binned Mileage", solidHeader = TRUE, status = "primary", width = 12,
                                               plotOutput("histBinMile", height="34vh"), height="40vh"), height="40vh"
                                          
@@ -283,7 +294,7 @@ ui <- dashboardPage(
                                              dataTableOutput("binTable"), height="40vh"
                                          )
                                   ),
-                                  column(1,
+                                  column(2,
                                          box( title = "Binned Trip Time", solidHeader = TRUE, status = "primary", width = 12,
                                               plotOutput("histTripTime", height="34vh"), height="40vh"), height="40vh"
                                   ),
@@ -291,16 +302,8 @@ ui <- dashboardPage(
                                          box(solidHeader = TRUE, status = "primary", width = 180,
                                              dataTableOutput("tripTable"), height="40vh"
                                          )
-                                  ),
-                                   column(1,
-                                         box( title = "Days of the  Week", solidHeader = TRUE, status = "primary", width = 12,
-                                              plotOutput("histDay", height="34vh"), height="40vh")
-                                  ),
-                                 column(1,
-                                         box(solidHeader = TRUE, status = "primary", width = 180,
-                                             dataTableOutput("dayTable"), height="40vh"
-                                         )
                                   )
+                                   
                                 
                                 
                                 
@@ -569,7 +572,7 @@ server <- function(input, output, session) {
     
     
     # f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
-    g<- ggplot(communityDF, aes(x= factor(Dropoff), y=n_rides)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(guide=guide_axis( angle = 45))
+    g<- ggplot(communityDF, aes(x= factor(Dropoff), y=n_rides)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(guide=guide_axis( angle = 45)) + coord_flip()
     print("plotting day of the week")
     return(g)
   })
