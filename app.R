@@ -235,7 +235,7 @@ ui <- dashboardPage(
                                            DT::dataTableOutput("dailyTable"), height="40vh"
                                        )
                                 ),
-                                column(3,
+                                column(5,
                                        box( title = "Heatmap", solidHeader = TRUE, status = "primary", width = 12,
                                             plotOutput("histCommunity", height="34vh"), height="40vh")
                                 ),
@@ -243,27 +243,19 @@ ui <- dashboardPage(
                                        box(solidHeader = TRUE, status = "primary", width = 180,
                                            DT::dataTableOutput("communityTable"), height="40vh"
                                        )
-                                ),
-                                column(1,
-                                       box( title = "something", solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("histHourly", height="34vh"), height="40vh")
-                                ),
-                                column(1,
-                                       box(solidHeader = TRUE, status = "primary", width = 180, title="table for hourly",
-                                           dataTableOutput("hourlyTable"), height="40vh"
-                                       )
                                 )
+                                
                                 
                                 
                        ),
                        
                        fluidRow(style='height:50vh; margin-top: 100px',
                                 
-                                 column(3,
+                                 column(2,
                                         leafletOutput("main_map", height="50vh")
                                     ),
                                   
-                                  column(2,
+                                  column(1,
                                          box( title = "Month", solidHeader = TRUE, status = "primary", width = 12,
                                               plotOutput("histMonthly", height="34vh"), height="40vh")
                                   ),
@@ -272,6 +264,15 @@ ui <- dashboardPage(
                                              dataTableOutput("monthlyTable"), height="40vh"
                                          )
                                   ),
+                                  column(1,
+                                       box( title = "something", solidHeader = TRUE, status = "primary", width = 12,
+                                            plotOutput("histHourly", height="34vh"), height="40vh")
+                                ),
+                                column(1,
+                                       box(solidHeader = TRUE, status = "primary", width = 180, title="table for hourly",
+                                           dataTableOutput("hourlyTable"), height="40vh"
+                                       )
+                                ),
                                   column(1,
                                          box( title = "Binned Mileage", solidHeader = TRUE, status = "primary", width = 12,
                                               plotOutput("histBinMile", height="34vh"), height="40vh"), height="40vh"
