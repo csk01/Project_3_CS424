@@ -95,7 +95,7 @@ community_areas <- c("Rogers Park", "West Ridge","Uptown","Lincoln Square","Nort
                      "Grand Boulevard","Kenwood","Washington Park","Hyde Park","Woodlawn","South Shore","Chatham","Avalon Park","South Chicago","Burnside",
                      "Calumet Heights","Roseland","Pullman","South Deering","East Side","West Pullman","Riverdale","Hegewisch","Garfield Ridge","Archer Heights",
                      "Brighton Park","McKinley Park","Bridgeport","New City","West Elsdon","Gage Park","Clearing","West Lawn","Chicago Lawn","West Englewood",
-                     "Englewood","Greater Grand Crossing","Ashburn","Auburn Gresham","Beverly","Washington Heights","Mount Greenwood","Morgan Park","O'Hare","Edgewater","Outside Chicago")
+                     "Englewood","Greater Grand Crossing","Ashburn","Auburn Gresham","Beverly","Washington Heights","Mount Greenwood","Morgan Park","O'Hare","Edgewater","Outside Chicago", "A of Chicago")
 
 years<-c(2001:2021)
 
@@ -181,16 +181,31 @@ ui <- dashboardPage(
                        # dateInput("date2", "Date 2:", value = "2020-08-23"),
                        # actionButton("prevDay", "Previous Day"),
                        # actionButton("nextDay", "Next  Day"),
-                       
-                       selectInput(inputId = "station", label = "Select community", choices = sort(community_areas))
-                       # radioButtons(
-                       #   inputId = "radio",
-                       #   label = "Mode",
-                       #   choices = c("To", "From"),
-                       #   selected = "To",
-                       #   inline = FALSE,
-                       #   width = NULL
-                       # )
+                       radioButtons(
+                         inputId = "radioMode",
+                         label = "Mode",
+                         choices = c("To", "From"),
+                         selected = "To",
+                         inline = FALSE,
+                         width = NULL
+                       ),
+                       selectInput(inputId = "community", label = "Select community", choices = sort(community_areas)),
+                       radioButtons(
+                         inputId = "radioTime",
+                         label = "Time Format",
+                         choices = c("12HR", "24HR"),
+                         selected = "12HR",
+                         inline = FALSE,
+                         width = NULL
+                       ),
+                       radioButtons(
+                         inputId = "radioDistance",
+                         label = "Show Distance in",
+                         choices = c("KM", "Mi"),
+                         selected = "KM",
+                         inline = FALSE,
+                         width = NULL
+                       )
                 ),
                 
                 column(11, 
@@ -365,10 +380,10 @@ ui <- dashboardPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-  # date1 <- reactive({input$date1})
-  # date2 <- reactive({input$date2})
-  # orders <- reactive({input$orders})   #order for the bar plot
-  # values <- reactiveValues(selected=NULL)
+  mode <- reactive({input$radioMode})
+  time_format <- reactive({input$radioTime})
+  community <- reactive({input$community})   #order for the bar plot
+  distance_format <- reactive({input$Distance})
   # yearly_values <- reactiveValues(selected="UIC-Halsted")
   # mode <- reactive({input$radio}) ###checking for which mode the user is in
   # single_year <- reactive({input$years})
@@ -455,23 +470,41 @@ server <- function(input, output, session) {
   })
   
   output$histHourly <- renderPlot({
-    
+
     g <- ggplot(data = hourly_rides, aes(x = factor(Hour), y = n_rides)) +
       geom_bar(stat="identity", fill="steelblue") +
       labs(title = "Taxi Rides per Day for the year of 2019",
            #subtitle = sub,
            x = "Hour", 
            y = "Rides") +
-      scale_y_continuous(labels = scales::comma) + scale_x_discrete(labels = time_in_12, guide=guide_axis( angle = 45))
+      scale_y_continuous(labels = scales::comma) 
+    if(time_format() == "12HR"){
+      g <- g + scale_x_discrete(labels = time_in_12, guide=guide_axis( angle = 45))
+    }else{
+        g <- g + scale_x_discrete(labels = time_in_24, guide=guide_axis( angle = 45))
+    }
     print("plotted hourly")
     return(g)
   })
   
   
   output$histDay <- renderPlot({
+    area <- which(community_areas == community())
+    if (area != 79 && area !=78){
+        if(mode() == "To"){
+            weekdays_rides <- taxi[Dropoff == area]
+        }else{
+            weekdays_rides <- taxi[Pickup == area]
+        }    
+        weekdays_rides <- weekdays_rides %>%
+        group_by(wday(Date)) %>%
+        summarise(n_rides = n())
+        weekdays_rides <- rename(weekdays_rides, "weekday" = "wday(Date)" )
+    }
+    
     
     # f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
-    g<- ggplot(weekdays_rides, aes(x= weekday, y=n_rides)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  
+    g<- ggplot(weekdays_rides, aes(x= factor(weekday), y=n_rides)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), guide=guide_axis( angle = 45))
     print("plotting day of the week")
     return(g)
   })
@@ -488,7 +521,7 @@ server <- function(input, output, session) {
   
   
   output$histBinMile <- renderPlot({
-    taxi %>% mutate(pop_cut = cut_number(Miles, n = 6)) %>% ggplot(aes(x = pop_cut)) + geom_bar(stat="count", fill="steelblue") + labs(title = "Taxi Rides Binned")
+    taxi %>% mutate(pop_cut = cut_number(Miles*1.609 , n = 6)) %>% ggplot(aes(x = pop_cut)) + geom_bar(stat="count", fill="steelblue") + labs(title = "Taxi Rides Binned")
     
   })
   output$histTripTime <- renderPlot({
