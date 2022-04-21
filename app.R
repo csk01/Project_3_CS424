@@ -1,5 +1,5 @@
-setwd("C:/Users/Krishnan CS/424_Project3")
-print(getwd())
+#setwd("C:/Users/Krishnan CS/424_Project3")
+#print(getwd())
 
 # LIBRARIES=======================================================================================================
 library(lubridate)
@@ -46,7 +46,7 @@ print("read data")
 #Reading community boundaries from a shape file 
 # Source: https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Community-Areas-current-/cauq-8yn6
 community_shp <- rgdal::readOGR("shp_files/geo_export_fca70ba1-774b-4562-b299-3cbfe3855c4d.shp",
-  layer = "geo_export_fca70ba1-774b-4562-b299-3cbfe3855c4d", GDAL1_integer64_policy = TRUE)
+                                layer = "geo_export_fca70ba1-774b-4562-b299-3cbfe3855c4d", GDAL1_integer64_policy = TRUE)
 
 print("read shp file")
 
@@ -136,12 +136,12 @@ month_rides <- taxi %>%
 print("monthly summarized")
 
 month_rides <- rename(month_rides, "newMonth" = "month(Date)" )
-
+weekdays_rides <- rename(weekdays_rides, "weekday" = "wday(Date)" )
 print("renaming")
 
 #defining basic leaflet map to add on to later
 map_plot <- leaflet() %>%
-      addTiles() 
+  addTiles() 
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
@@ -162,7 +162,7 @@ ui <- dashboardPage(
     )
     
   ),
-   
+  
   
   dashboardBody(
     
@@ -310,7 +310,7 @@ ui <- dashboardPage(
                               
                               fluidRow(style="height: 40vh", 
                                        
-                                      #  leafletOutput("mymap2")
+                                       #  leafletOutput("mymap2")
                               )
                               
                        ),
@@ -427,31 +427,31 @@ server <- function(input, output, session) {
            y = "Rides") +
       scale_x_date(date_labels = "%d-%b", breaks = date_breaks("months"),date_minor_breaks="days" ) +
       scale_y_continuous(labels = scales::comma)   
-      print("plotted daily plot")
+    print("plotted daily plot")
     return(g)
   })
   
   output$main_map <- renderLeaflet({
     print("map")
-      map_plot %>%
+    map_plot %>%
       addPolygons( data = community_shp,
-                        color = "#444444",
-                        weight = 1, 
-                        smoothFactor = 0.5,
-                        opacity = 1.0,
-                        fillOpacity = 0.65,
-                        dashArray = "3",
-                        highlightOptions = highlightOptions(color = "white", 
-                                                            weight = 2,
-                                                            dashArray = "",
-                                                            bringToFront = TRUE),
-                        popup=labels,
-                        label = labels,
-                  
-                  
-                )
-      print("plotted map")
-      return(map_plot)
+                   color = "#444444",
+                   weight = 1, 
+                   smoothFactor = 0.5,
+                   opacity = 1.0,
+                   fillOpacity = 0.65,
+                   dashArray = "3",
+                   highlightOptions = highlightOptions(color = "white", 
+                                                       weight = 2,
+                                                       dashArray = "",
+                                                       bringToFront = TRUE),
+                   popup=labels,
+                   label = labels,
+                   
+                   
+      )
+    print("plotted map")
+    return(map_plot)
   })
   
   output$histHourly <- renderPlot({
@@ -462,18 +462,18 @@ server <- function(input, output, session) {
            #subtitle = sub,
            x = "Hour", 
            y = "Rides") +
-          scale_y_continuous(labels = scales::comma) + scale_x_discrete(labels = time_in_12, guide=guide_axis( angle = 45))
-          print("plotted hourly")
-        return(g)
+      scale_y_continuous(labels = scales::comma) + scale_x_discrete(labels = time_in_12, guide=guide_axis( angle = 45))
+    print("plotted hourly")
+    return(g)
   })
   
   
   output$histDay <- renderPlot({
-    dft <- taxi
-    f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
-    g<- ggplot(dft, aes(x= f)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="count", position="dodge", fill="deepskyblue4")  
+    
+    # f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
+    g<- ggplot(weekdays_rides, aes(x= weekday, y=n_rides)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  
     print("plotting day of the week")
-        return(g)
+    return(g)
   })
   
   
@@ -496,343 +496,60 @@ server <- function(input, output, session) {
     
   })
   
+  #  Commenting out all the tables
   
+  # output$dailyTable <- DT::renderDataTable({
   
-  output$dailyTable <- DT::renderDataTable({
-    
-    datatable(daily_rides, 
-              options = list(
-                searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15)
-              )) %>% 
-      formatCurrency(2, currency = "", interval = 3, mark = ",")
-    
-    
-    
-  })
+  #   datatable(daily_rides, 
+  #             options = list(
+  #               searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15)
+  #             )) %>% 
+  #     formatCurrency(2, currency = "", interval = 3, mark = ",")
   
-  output$hourlyTable <- renderDataTable({
-    
-    datatable(hourly_rides, 
-              options = list(
-                searching = FALSE,pageLength = 5, lengthMenu = c(5, 10, 15)
-              )) %>% 
-      formatCurrency(2, currency = "", interval = 3, mark = ",")
-    
-    
-    
-  })
-  
-  
-  output$dayTable <- renderDataTable({
-    
-    datatable(weekdays_rides, 
-              options = list(
-                searching = FALSE,pageLength = 7, lengthMenu = c(5, 10, 15),
-                order = list(list(1, 'asc'))
-              )) %>% 
-      formatCurrency(2, currency = "", interval = 3, mark = ",")
-    
-    
-    
-  })
-  
-  
-  output$monthlyTable <- renderDataTable({
-    
-    datatable(taxi, 
-              options = list(
-                searching = FALSE,pageLength = 12,
-                order = list(list(1, 'asc'))
-              )) %>% 
-      formatCurrency(2, currency = "", interval = 3, mark = ",")
-    
-    
-    
-  })
-  
-  # output$barplottable <- renderDataTable({
-  #   # df <- tmpdata()
-  #   # df2 <- tmpdata2()
-  
-  #   # if(mode()=="Single Date"){
-  #   #   dfl <- df[, c("stationname", "rides", "lines")]
-  #   #   fm <- "rides"
-  #   # }else{
-  #   #   dfl <- df %>% full_join(df2, by="station_id")
-  #   #   dfl <- dfl[!is.na(dfl$stationname.x),]
-  #   #   dfl$rides.y <- replace_na(dfl$rides.y, 0)
-  #   #   dfl$diff = dfl$rides.x - dfl$rides.y 
-  #   #   dfl <- dfl[, c("stationname.x", "diff", "lines.x")]
-  #   #   colnames(dfl) <- c("Station Name", "Difference", "Lines")
-  #   #   fm <- "Difference"
-  #   # }
-  
-  
-  
-  
-  #   # if(orders() == "Descending"){
-  #   #   tab_order <- list(list(2, 'dsc'))
-  #   # } else if(orders()=="Ascending"){
-  #   #   tab_order <- list(list(2, 'asc'))
-  #   # } else{
-  #   #   tab_order <- list(list(1, 'asc'))
-  #   # }
-  #   # datatable(dfl, 
-  #   #           options = list(
-  #   #             searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
-  #   #             order = tab_order
-  #   #           )) %>% 
-  #   #   formatCurrency(2, currency = "", interval = 3, mark = ",")%>%
-  #   #   formatRound(fm, digits = 0)
-  # })
-  
-  
-  
-  
-  # ### observer for map
-  # observe({
-  #   proxy <- leafletProxy("mymap")
-  #   proxy %>% clearPopups() 
-  #   event <- input$mymap_marker_click
-  #   values$selected <- event$id
-  #   if (is.null(event))
-  #     return()
-  #   # print(length(input$mymap_click))
-  #   if(length(input$mymap_click) > 0) {
-  #     updateSelectInput(session = session, inputId = "station", selected =  values$selected)
-  #   }  
   
   
   # })
   
-  # ### anotherObserver
-  # observeEvent(input$station, {
-  #   proxy <- leafletProxy("mymap")
-  #   proxy %>% clearPopups() 
-  #   shinyjs::js$markerClick(input$station)
-  #   # df <- tmpdata()
-  #   # values$selected <- input$station
-  #   # df <- subset(df, stationname == values$selected)
-  #   # print("it comes here")
+  # output$hourlyTable <- renderDataTable({
   
-  #   # content <-  paste("<center><strong>" ,df$stationname, "</strong>", "<br>",
-  #   #                   df$lines, "<br>",
-  #   #                   "Rides: ", df$rides, "<br> </center>")
-  #   # if(length(input$mymap_click) == 0){
-  #   #     leafletProxy("mymap") %>% addPopups(df$long, df$lat, content)
-  #   # }
+  #   datatable(hourly_rides, 
+  #             options = list(
+  #               searching = FALSE,pageLength = 5, lengthMenu = c(5, 10, 15)
+  #             )) %>% 
+  #     formatCurrency(2, currency = "", interval = 3, mark = ",")
   
-  
-  # })
-  
-  # ##############for second map
-  
-  # ### observer for map
-  # observe({
-  #   proxy <- leafletProxy("mymap2")
-  #   proxy %>% clearPopups() 
-  #   event <- input$mymap2_marker_click
-  #   yearly_values$selected <- event$id
-  #   if (is.null(event))
-  #     return()
-  #   # print(length(input$mymap_click))
-  #   if(length(input$mymap2_click) > 0) {
-  #     updateSelectInput(session = session, inputId = "yearly_station", selected =  yearly_values$selected)
-  #   }  
   
   
   # })
   
   
-  # observeEvent(input$yearly_station, {
-  #   proxy <- leafletProxy("mymap2")
-  #   proxy %>% clearPopups() 
-  #   shinyjs::js$markerClick(input$yearly_station)
+  # output$dayTable <- renderDataTable({
   
-  # })
-  
-  # observeEvent(input$radio, {
-  #   if(input$radio == "Single Date"){
-  #     shinyjs::hide(id="date2")
-  #   }else{
-  #     shinyjs::show(id="date2")
-  #   }
-  # })
+  #   datatable(weekdays_rides, 
+  #             options = list(
+  #               searching = FALSE,pageLength = 7, lengthMenu = c(5, 10, 15),
+  #               order = list(list(1, 'asc'))
+  #             )) %>% 
+  #     formatCurrency(2, currency = "", interval = 3, mark = ",")
   
   
-  # observeEvent(input$order_for_single, {
-  #   if(input$order_for_single == "BarPlot"){
-  #     shinyjs::hide(id="tableYearly")
-  #     shinyjs::hide(id="tableMonthly")
-  #     shinyjs::hide(id="tableWeekly")
-  #     shinyjs::hide(id="tableDaily")
-  #     shinyjs::show(id="yearly")
-  #     shinyjs::show(id="monthly")
-  #     shinyjs::show(id="weekly")
-  #     shinyjs::show(id="daily")
-  
-  #   }else{
-  #     shinyjs::hide(id="yearly")
-  #     shinyjs::hide(id="monthly")
-  #     shinyjs::hide(id="weekly")
-  #     shinyjs::hide(id="daily")
-  #     shinyjs::show(id="tableYearly")
-  #     shinyjs::show(id="tableMonthly")
-  #     shinyjs::show(id="tableWeekly")
-  #     shinyjs::show(id="tableDaily")
-  #   }
-  # })
-  
-  
-  
-  
-  
-  
-  
-  
-  # ########### yearly page
-  
-  
-  # output$mymap2 <- renderLeaflet({
-  #   # df <- subset(mergedData, newDate==date1())
-  #   # df$line_color <-  str_extract(df$line, "\\w+")
-  #   # map <- leaflet(options= leafletOptions()) %>%
-  #   #   addTiles(group="Base") %>% 
-  #   #   addCircleMarkers(data = df, lat = ~lat, lng = ~long, 
-  
-  #   #                    radius = ~log(rides+10)*1.25,
-  #   #                    layerId = ~stationname,
-  #   #                    color = ~line_color,
-  #   #                    fillOpacity = 0.6,
-  #   #                    popup = paste("<center><strong>" ,df$stationname, "</strong>", "<br>",
-  #   #                                  df$lines, "<br>",
-  #   #                                  "Rides: ", df$rides, "<br> </center>")
-  #   #   )%>%
-  #   #   setView( lat = 41.8781, lng = -87.6298, zoom = 10) %>%
-  #   #   addResetMapButton() %>%
-  #   #   addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
-  #   #   addProviderTiles("CartoDB.Positron", group="Positron") %>%
-  #   #   addLayersControl(
-  #   #     baseGroups = c("Base", "Satellite", "Positron"),
-  #   #     options = layersControlOptions(collapsed = FALSE)
-  #   #   )
-  #   # map <- map %>% 
-  #   #   htmlwidgets::onRender("
-  #   #       function(el, x) {
-  #   #         map = this;
-  #   #       }"
-  #   #   )     
-  #   # return(map)
   
   # })
   
   
+  # output$monthlyTable <- renderDataTable({
   
-  # output$daily <- renderPlot({
+  #   datatable(taxi, 
+  #             options = list(
+  #               searching = FALSE,pageLength = 12,
+  #               order = list(list(1, 'asc'))
+  #             )) %>% 
+  #     formatCurrency(2, currency = "", interval = 3, mark = ",")
   
-  #   # dft <- single_df()
-  #   # dft <- subset(dft, stationname==yearly_station())
-  #   # ggplot(dft, aes(x= newDate, y=rides)) +labs(x="Date ", y = "Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") 
+  
   
   # })
   
-  # output$yearly <- renderPlot({
-  
-  #   # dft <- mergedData
-  #   # dft <- subset(dft, stationname==yearly_station())
-  #   # ggplot(dft, aes(x= year(newDate), y=rides)) +labs(x="Year ", y = "Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") 
-  
-  # })
-  
-  
-  # output$monthly <- renderPlot({
-  
-  #   # dft <- single_df()
-  #   # dft <- subset(dft, stationname==yearly_station())
-  #   # ggplot(dft, aes(x= month(newDate), y=rides)) +labs(x="Months (1 = Jan, 12=Dec)", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_continuous(breaks = seq(1, 12, by = 1)) + ggtitle(paste("Station Name: ", input$yearly_station), subtitle=paste("Year", input$years))
-  
-  # })
-  
-  
-  # output$weekly <- renderPlot({
-  
-  #   # dft <- single_df()
-  #   # dft <- subset(dft, stationname==yearly_station())
-  #   # f <- factor(weekdays(dft$newDate), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
-  #   # ggplot(dft, aes(x= f, y=rides)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + ggtitle(paste("Station Name: ", input$yearly_station), subtitle=paste("Year", input$years))
-  
-  # })
-  
-  # output$tableYearly <- renderDataTable({
-  
-  #   # df<- subset(mergedData, stationname==yearly_station()) %>%
-  #   #   mutate(year = format(newDate, "%Y")) %>%
-  #   #   group_by(year) %>%
-  #   #   summarise(rides = sum(rides))
-  
-  
-  
-  #   # datatable(df, 
-  #   #           options = list(
-  #   #             searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
-  #   #             order = list(list(1, 'asc'))
-  #   #           )) %>% 
-  #   #   formatCurrency(2, currency = "", interval = 3, mark = ",")%>%
-  #   #   formatRound('rides', digits = 0)
-  # })
-  
-  
-  # output$tableMonthly <- renderDataTable({
-  
-  #   # df<- subset(mergedData, stationname==yearly_station()) %>%
-  #   #   mutate(month = month(newDate)) %>%
-  #   #   group_by(month) %>%
-  #   #   summarise(rides = sum(rides))
-  
-  
-  
-  #   # datatable(df, 
-  #   #           options = list(
-  #   #             searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
-  #   #             order = list(list(1, 'asc'))
-  #   #           )) %>% 
-  #   #   formatCurrency(2, currency = "", interval = 3, mark = ",")%>%
-  #   #   formatRound('rides', digits = 0)
-  # })
-  
-  
-  # output$tableWeekly <- renderDataTable({
-  
-  #   # df<- subset(mergedData, stationname==yearly_station()) %>%
-  #   #   mutate(weekdays = weekdays(newDate)) %>%
-  #   #   group_by(weekdays) %>%
-  #   #   summarise(rides = sum(rides))
-  
-  
-  
-  #   # datatable(df, 
-  #   #           options = list(
-  #   #             searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
-  #   #             order = list(list(1, 'asc'))
-  #   #           )) %>% 
-  #   #   formatCurrency(2, currency = "", interval = 3, mark = ",")%>%
-  #   #   formatRound('rides', digits = 0)
-  # })
-  
-  # output$tableDaily <- renderDataTable({
-  #   # df<- single_df()
-  #   # df<- subset(mergedData, stationname==yearly_station()) 
-  
-  #   # df <- df[, c("newDate", "rides")]
-  
-  #   # datatable(df, 
-  #   #           options = list(
-  #   #             searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
-  #   #             order = list(list(1, 'asc'))
-  #   #           )) %>% 
-  #   #   formatCurrency(2, currency = "", interval = 3, mark = ",")%>%
-  #   #   formatRound('rides', digits = 0)
-  # })
   
   
   
