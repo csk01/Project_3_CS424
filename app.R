@@ -224,7 +224,7 @@ ui <- dashboardPage(
 
                         column(12,
                                        box( title = "Heatmap", solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("histCommunity", height="90vh"), height="90vh"), height="80vh"
+                                            plotOutput("histCommunity", height="90vh") )
                                 )
                     ),
                 
@@ -646,10 +646,21 @@ server <- function(input, output, session) {
   #               order = list(list(1, 'asc'))
   #             )) %>% 
   #     formatCurrency(2, currency = "", interval = 3, mark = ",")
+
+   output$tripTable <- renderDataTable({
+    tmp <- taxi %>% mutate(pop_cut = cut_number(Duration, n = 6))
+    tmp <- tmp %>%  group_by(pop_cut) %>% summarise(n_rides = n())
+    datatable(tmp, 
+              options = list(
+                searching = FALSE,pageLength = 12,
+                order = list(list(1, 'asc')),
+                columnDefs = list(list(width = '200px', targets = "_all"))
+              )) %>% 
+      formatCurrency(2, currency = "", interval = 3, mark = ",")
   
   
   
-  # })
+  })
   
   
   
