@@ -104,35 +104,28 @@ months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'Aug
 
 
 # Summarize the number of taxi rides by day
-daily_rides <- taxi %>%
-  group_by(Date) %>%
-  summarise(n_rides = n())
+daily_rides <- taxi[, .N, by=list(Date)]
 
 print("daily summarized")
 
 # Summarize the number of taxi rides by hour
-hourly_rides <- taxi %>%
-  group_by(Hour) %>%
-  summarise(n_rides = n())
+hourly_rides <- taxi[, .N, by=Hour]
 
 print("hourly summarized")
 
 # Summarize the number of taxi rides by day of the week
-weekdays_rides <- taxi %>%
-  group_by(wday(Date)) %>%
-  summarise(n_rides = n())
+weekdays_rides <- taxi[, .N, by=wday(Date)]
 
 print("wday summarized")
 
 # Summarize the number of taxi rides by month
-month_rides <- taxi %>%
-  group_by(month(Date)) %>%
-  summarise(n_rides = n())
+month_rides <- taxi[, .N, by=month(Date)]
 
 print("monthly summarized")
 
-month_rides <- rename(month_rides, "newMonth" = "month(Date)" )
-weekdays_rides <- rename(weekdays_rides, "weekday" = "wday(Date)" )
+
+month_rides <- rename(month_rides, "newMonth" = "month" )
+weekdays_rides <- rename(weekdays_rides, "weekday" = "wday" )
 print("renaming")
 
 #defining basic leaflet map to add on to later
@@ -189,10 +182,7 @@ ui <- dashboardPage(
                        
                        fluidRow(style="height:40vh"),
                        p("Input controls"),
-                       # dateInput("date1", "Date:", value = "2021-08-23"),
-                       # dateInput("date2", "Date 2:", value = "2020-08-23"),
-                       # actionButton("prevDay", "Previous Day"),
-                       # actionButton("nextDay", "Next  Day"),
+                       checkboxInput(inputId="outsideChicago", label="Outside Chicago", value = FALSE, width = NULL),
                        radioButtons(
                          inputId = "radioMode",
                          label = "Mode",
@@ -202,6 +192,7 @@ ui <- dashboardPage(
                          width = NULL
                        ),
                        selectInput(inputId = "community", label = "Select community", choices = sort(community_areas)),
+                       selectInput(inputId = "taxiCompany", label = "Select Taxi Company", choices = sort(values)),
                        radioButtons(
                          inputId = "radioTime",
                          label = "Time Format",
@@ -414,57 +405,16 @@ server <- function(input, output, session) {
   time_format <- reactive({input$radioTime})
   community <- reactive({input$community})   #order for the bar plot
   distance_format <- reactive({input$Distance})
-  # yearly_values <- reactiveValues(selected="UIC-Halsted")
-  # mode <- reactive({input$radio}) ###checking for which mode the user is in
-  # single_year <- reactive({input$years})
-  # yearly_station <- reactive({input$yearly_station})
+  outside_chicago <- reactive({input$outsideChicago})
+  taxi_company <- reactive({input$taxiCompany})
   
-  
-  
-  # #   code for dynamic header
-  # # output$text <-renderText({ paste("Total entries for", date( input$date1), ", ", weekdays(input$date1) ) })
-  # # tmpdata <- reactive({ subset(mergedData, newDate==input$date1)})
-  # # tmpdata2 <-reactive ({subset(mergedData, newDate==input$date2) })
-  # #   dfnew3 <- reactive({data.frame(tmpdata()$stationname, tmpdata()$rides)})
-  # #   names(dfnew3) <- c("Station", "Rides")
-  
-  # choices_stations <- reactive({
-  #   choices_stations <- tmpdata() %>% distinct(stationname) %>% arrange()
-  
-  # })
-  
-  # choices_stations_new <- reactive({
-  #   choices_stations_new <- single_df() %>% distinct(stationname) %>% arrange()
-  
-  # })
-  
-  
-  # observe({
-  #   updateSelectInput(session = session, inputId = "station", choices = choices_stations())
-  # })
-  
-  # ####updating station list on the yearly plot page, single df is the data frame
-  # observe({
-  #   updateSelectInput(session = session, inputId = "yearly_station", choices = choices_stations_new(), selected="UIC-Halsted")
-  # })
-  
-  
-  # observeEvent(input$prevDay, {
-  #   curDate <- date1()
-  #   curDate <- curDate - 1
-  #   updateDateInput(session, "date1", value = curDate)
-  # })
-  
-  # observeEvent(input$nextDay, {
-  #   curDate <- date1()
-  #   curDate <- curDate + 1
-  #   updateDateInput(session, "date1", value = curDate)
-  # })
-  
+
+
+ ##################### Histograms #################### 
   
   output$hist1 <- renderPlot({
     print("Daily plot")
-    g<- ggplot(data = daily_rides, aes(x = Date, y = n_rides)) +
+    g<- ggplot(data = daily_rides, aes(x = Date, y = N)) +
       geom_bar(stat="identity", fill="steelblue") +
       labs(title = "Taxi Rides per Day for the year of 2019",
            #subtitle = sub,
@@ -517,7 +467,7 @@ server <- function(input, output, session) {
   })
   
   output$histHourly <- renderPlot({
-    g <- ggplot(data = hourly_rides, aes(x = factor(Hour), y = n_rides)) +
+    g <- ggplot(data = hourly_rides, aes(x = factor(Hour), y = N)) +
       geom_bar(stat="identity", fill="steelblue") +
       labs(title = "Taxi Rides per Day for the year of 2019",
            #subtitle = sub,
@@ -542,15 +492,13 @@ server <- function(input, output, session) {
         }else{
             weekdays_rides <- taxi[Pickup == area]
         }    
-        weekdays_rides <- weekdays_rides %>%
-        group_by(wday(Date)) %>%
-        summarise(n_rides = n())
-        weekdays_rides <- rename(weekdays_rides, "weekday" = "wday(Date)" )
+        weekdays_rides <- weekdays_rides[, .N, by=wday(Date)]
+        weekdays_rides <- rename(weekdays_rides, "weekday" = "wday" )
     }
     
     
     # f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
-    g<- ggplot(weekdays_rides, aes(x= factor(weekday), y=n_rides)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), guide=guide_axis( angle = 45))
+    g<- ggplot(weekdays_rides, aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), guide=guide_axis( angle = 45))
     print("plotting day of the week")
     return(g)
   })
@@ -581,7 +529,7 @@ server <- function(input, output, session) {
   
   
   output$histMonthly <- renderPlot({
-    g <- ggplot(month_rides, aes(x= factor(newMonth), y= n_rides)) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = months, guide=guide_axis( angle = 45))
+    g <- ggplot(month_rides, aes(x= factor(newMonth), y= N)) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = months, guide=guide_axis( angle = 45))
     print("plotting monthly")
     return(g)
   })
@@ -589,14 +537,19 @@ server <- function(input, output, session) {
   
   
   output$histBinMile <- renderPlot({
+    print("plotting Bin Mile")
     taxi %>% mutate(pop_cut = cut_number(Miles*1.609 , n = 6)) %>% ggplot(aes(x = pop_cut)) + geom_bar(stat="count", fill="steelblue") + labs(title = "Taxi Rides Binned")
     
   })
   output$histTripTime <- renderPlot({
+    print("plotting Bin Trip")
     taxi %>% mutate(pop_cut = cut_number(Duration, n = 6)) %>% ggplot(aes(x = pop_cut)) + geom_bar(stat="count", fill="steelblue") + labs(title = "Taxi Rides Binned")
     
   })
   
+
+  ##################### END Histograms ####################
+
   #  Commenting out all the tables
   
   # output$dailyTable <- DT::renderDataTable({
@@ -638,11 +591,11 @@ server <- function(input, output, session) {
   # })
 
   output$dayTable <- renderDataTable({
+
+    print("Bin trip done")
     communityDF <- taxi[Pickup == 44]
             
-        communityDF <- communityDF %>%
-        group_by(Dropoff) %>%
-        summarise(n_rides = n())
+        communityDF <- taxi[, .N, by=Dropoff]
     datatable(communityDF, 
               options = list(
                 searching = FALSE,pageLength = 7, lengthMenu = c(5, 10, 15),
