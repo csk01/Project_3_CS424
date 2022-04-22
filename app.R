@@ -512,15 +512,13 @@ server <- function(input, output, session) {
         
         communityDF <- taxi[Pickup == 44]
             
-        communityDF <- communityDF %>%
-        group_by(Dropoff) %>%
-        summarise(n_rides = n())
+        communityDF <- communityDF[, .N, by=Dropoff]
         
     
     
     
     # f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
-    g<- ggplot(communityDF, aes(x= factor(Dropoff), y=n_rides)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(guide=guide_axis( angle = 45)) + coord_flip()
+    g<- ggplot(communityDF, aes(x= factor(Dropoff), y=N)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(guide=guide_axis( angle = 45)) + coord_flip()
     print("plotting day of the week")
     return(g)
   })
@@ -538,12 +536,17 @@ server <- function(input, output, session) {
   
   output$histBinMile <- renderPlot({
     print("plotting Bin Mile")
-    taxi %>% mutate(pop_cut = cut_number(Miles*1.609 , n = 6)) %>% ggplot(aes(x = pop_cut)) + geom_bar(stat="count", fill="steelblue") + labs(title = "Taxi Rides Binned")
+    binned_mile <- taxi %>% mutate(distance_bin = cut_number(Miles*1.609 , n = 6))
+    binned_mile <- binned_mile[, .N, by=distance_bin]
+
+     ggplot(binned_mile, aes(x = distance_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(title = "Taxi Rides Binned")
     
   })
   output$histTripTime <- renderPlot({
     print("plotting Bin Trip")
-    taxi %>% mutate(pop_cut = cut_number(Duration, n = 6)) %>% ggplot(aes(x = pop_cut)) + geom_bar(stat="count", fill="steelblue") + labs(title = "Taxi Rides Binned")
+    binned_time <- taxi %>% mutate(time_bin = cut_number(Duration, n = 6))
+    binned_time <- binned_time[, .N, by=time_bin]
+    ggplot(binned_time, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(title = "Taxi Rides Binned by time")
     
   })
   
