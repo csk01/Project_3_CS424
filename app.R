@@ -190,7 +190,7 @@ ui <- dashboardPage(
                                                 solidHeader = TRUE,
                                                 status = "primary", 
                                                 width = 12,
-                                                plotOutput("histCommunityOld", height="90vh") 
+                                                plotOutput("histCommunity", height="90vh") 
                                             )
                                         )
                                     ),
@@ -347,7 +347,7 @@ ui <- dashboardPage(
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 12,
-                                                    plotOutput("histCommunity", height="34vh"), 
+                                                    plotOutput("histCommunityOld", height="34vh"), 
                                                     height="40vh"
                                                 ), 
                                                 height="40vh"
@@ -679,14 +679,14 @@ server <- function(input, output, session) {
                 communityDF <- communityDF[, .N, by=Pickup]    
                 communityDF <- communityDF[, Percentage:=((N/as.integer(total_rides) )*100)]
                 communityDF <- communityDF %>% mutate(Pickup = community_areas[Pickup] )
-                g<- ggplot(communityDF, aes(x= factor(Pickup), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   
+                g<- ggplot(communityDF, aes(x= factor(Pickup), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   + coord_flip()
             }else{
                 communityDF <- taxi[Pickup == community()]
                 total_rides <- count(communityDF)
                 communityDF <- communityDF[, .N, by=Dropoff]
                 communityDF <- communityDF[, Percentage:=((N/as.integer(total_rides))*100)]
                 communityDF <- communityDF %>% mutate(Dropoff = community_areas[Dropoff] )
-                g<- ggplot(communityDF, aes(x= factor(Dropoff), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   
+                g<- ggplot(communityDF, aes(x= factor(Dropoff), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   + coord_flip()
             }
 
                  
