@@ -153,283 +153,280 @@ map_plot <- leaflet() %>%
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
-  dashboardHeader(title = "Big Yellow Taxi"),
+                    dashboardHeader(title = "Big Yellow Taxi"),
   
-  # Application title
-  dashboardSidebar(
-    #comment
-    collapsed = TRUE, 
-    sidebarMenu(
-      br(),br(),br(),br(), br(),br(),br(),br(), br(),br(),br(),br(), br(),br(),br(),br(), 
-      menuItem("Home", tabName = "dashboard", icon = NULL),
-      
-      menuItem("About", tabName = "about", icon = NULL),
-      
-      menuItem("Yearly Plots", tabName = "yearlyPlots", icon = NULL)
-      
-    )
-    
-    
-  ),
-  
-  
-  dashboardBody(
-    
-    tabItems(
-      
-      tabItem(tabName = "dashboard",
-              
-              fluidRow(
-                    textOutput("selectedVar")
-              ),
-              fluidRow(
-                shinyjs::useShinyjs(),
-                shinyjs::extendShinyjs(text = jsCode, functions = c('shapeClick')),
-                
-                column(1,
-                       
-                       fluidRow(style="height:40vh"),
-                       p("Input controls"),
-                       checkboxInput(inputId="outsideChicago", label="Outside Chicago", value = FALSE, width = NULL),
-                       radioButtons(
-                         inputId = "radioMode",
-                         label = "Mode",
-                         choices = c("To", "From"),
-                         selected = "To",
-                         inline = FALSE,
-                         width = NULL
-                       ),
-                       selectInput(inputId = "community", label = "Select community", choices = sort(community_areas), selected="All of Chicago"),
-                       selectInput(inputId = "taxiCompany", label = "Select Taxi Company", choices = sort(values), selected = "All"),
-                       radioButtons(
-                         inputId = "radioTime",
-                         label = "Time Format",
-                         choices = c("12HR", "24HR"),
-                         selected = "12HR",
-                         inline = FALSE,
-                         width = NULL
-                       ),
-                       radioButtons(
-                         inputId = "radioDistance",
-                         label = "Show Distance in",
-                         choices = c("KM", "Mi"),
-                         selected = "KM",
-                         inline = FALSE,
-                         width = NULL
-                       )
-                ),
-
-                column(1,
-
-                        column(12,
-                                       box( title = "Heatmap", solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("histCommunity", height="90vh") )
-                                )
+                    # Application title
+                    dashboardSidebar(
+                        collapsed = TRUE, 
+                        sidebarMenu(
+                            br(),br(),br(),br(), br(),br(),br(),br(), br(),br(),br(),br(), br(),br(),br(),br(), 
+                            menuItem("Home", tabName = "dashboard", icon = NULL),
+                            menuItem("About", tabName = "about", icon = NULL),
+                            menuItem("Yearly Plots", tabName = "yearlyPlots", icon = NULL)
+                        )
                     ),
-                
-                column(10, 
-                       
-                       
-                       #### CONTROLS
-                       
-                       fluidRow(style='height:40vh',
-                                column(6,
-                                       box( title = textOutput("text"), solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("hist1", height="34vh"), height="40vh")
+                    dashboardBody(
+                        tabItems(
+                            tabItem(
+                                tabName = "dashboard",
+                                fluidRow(
+                                    textOutput("selectedVar")
                                 ),
-                                column(1,
-                                       box(solidHeader = TRUE, status = "primary", width = 180,
-                                           DT::dataTableOutput("dailyTable"), height="40vh"
-                                       )
-                                ),
-                                 column(2,
-                                       box( title = "something", solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("histHourly", height="34vh"), height="40vh")
-                                ),
-                                column(1,
-                                       box(solidHeader = TRUE, status = "primary", width = 180, title="table for hourly",
-                                           dataTableOutput("hourlyTable"), height="40vh"
-                                       )
-                                ),
-                                column(1,
-                                         box( title = "Days of the  Week", solidHeader = TRUE, status = "primary", width = 12,
-                                              plotOutput("histDay", height="34vh"), height="40vh")
-                                  ),
-                                 column(1,
-                                         box(solidHeader = TRUE, status = "primary", width = 180,
-                                             dataTableOutput("dayTable"), height="40vh"
-                                         )
-                                  )
-                                
-                               
-                                
-                                
-                                
-                       ),
-                       
-                       fluidRow(style='height:50vh; margin-top: 100px',
-                                
-                                 column(3,
-                                        leafletOutput("main_map", height="50vh")
+                                fluidRow(
+                                    shinyjs::useShinyjs(),
+                                    shinyjs::extendShinyjs(text = jsCode, functions = c('shapeClick')),
+                                    column(1,
+                                        fluidRow(style="height:40vh"),
+                                        p("Input controls"),
+                                        checkboxInput(inputId="outsideChicago", label="Outside Chicago", value = FALSE, width = NULL),
+                                        radioButtons(
+                                            inputId = "radioMode",
+                                            label = "Mode",
+                                            choices = c("To", "From"),
+                                            selected = "To",
+                                            inline = FALSE,
+                                            width = NULL
+                                        ),
+                                        selectInput(inputId = "community", label = "Select community", choices = sort(community_areas), selected="All of Chicago"),
+                                        selectInput(inputId = "taxiCompany", label = "Select Taxi Company", choices = sort(values), selected = "All"),
+                                        radioButtons(
+                                            inputId = "radioTime",
+                                            label = "Time Format",
+                                            choices = c("12HR", "24HR"),
+                                            selected = "12HR",
+                                            inline = FALSE,
+                                            width = NULL
+                                        ),
+                                        radioButtons(
+                                            inputId = "radioDistance",
+                                            label = "Show Distance in",
+                                            choices = c("KM", "Mi"),
+                                            selected = "KM",
+                                            inline = FALSE,
+                                            width = NULL
+                                        )
                                     ),
-                                  
-                                  column(2,
-                                         box( title = "Month", solidHeader = TRUE, status = "primary", width = 12,
-                                              plotOutput("histMonthly", height="34vh"), height="40vh")
-                                  ),
-                                  column(1,
-                                         box(solidHeader = TRUE, status = "primary", width = 180,
-                                             dataTableOutput("monthlyTable"), height="40vh"
-                                         )
-                                  ),
-                                 
-                                  column(2,
-                                         box( title = "Binned Mileage", solidHeader = TRUE, status = "primary", width = 12,
-                                              plotOutput("histBinMile", height="34vh"), height="40vh"), height="40vh"
-                                         
-                                  ),
-                                  column(1,
-                                         box(solidHeader = TRUE, status = "primary", width = 180,
-                                             dataTableOutput("binTable"), height="40vh"
-                                         )
-                                  ),
-                                  column(2,
-                                         box( title = "Binned Trip Time", solidHeader = TRUE, status = "primary", width = 12,
-                                              plotOutput("histTripTime", height="34vh"), height="40vh"), height="40vh"
-                                  ),
-                                  column(1,
-                                         box(solidHeader = TRUE, status = "primary", width = 180,
-                                             dataTableOutput("tripTable"), height="40vh"
-                                         )
-                                  )
-                                   
-                                
-                                
-                                
-                                
-                                
-                                
-                                
-                       )
-                       
-                       
-                       
-                       
-                       
-                )
-                
-                
-                
-                
-                
-                
-              )
-              
-              
-              
-              
-      ),
-      
-      tabItem(tabName="yearlyPlots",
-              
-              fluidRow(
-                
-                column(2,
-                       
-                       fluidRow(style="height:40vh"),
-                       p("Input controls"),
-                       selectInput("years", "Select the year", years, selected = "2021"),
-                       selectInput(inputId = "yearly_station", label = "Select station", choices = NULL),
-                       selectInput("order_for_single", "Select chart Type", c("BarPlot", "Table"), selected = "BarPlot")
-                       
-                ),
-                column(10,
-                       
-                       column(6, 
-                              
-                              fluidRow(style="height:40vh", 
-                                       box( title = "Daily entries", solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("daily"), dataTableOutput("tableDaily")
-                                       )
-                                       
-                                       
-                              ),
-                              
-                              fluidRow(style="height: 40vh", 
-                                       
-                                       #  leafletOutput("mymap2")
-                              )
-                              
-                       ),
-                       column(4,
-                              
-                              fluidRow(
-                                column(12, 
-                                       box( title = "Yearly entries", solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("yearly"), dataTableOutput("tableYearly")
-                                       )
-                                       
+                                    column(1,
+                                        column(12,
+                                            box(title = "Heatmap", 
+                                                solidHeader = TRUE,
+                                                status = "primary", 
+                                                width = 12,
+                                                plotOutput("histCommunity", height="90vh") 
+                                            )
+                                        )
+                                    ),
+                                    column(10, 
+                                        fluidRow(style='height:40vh',
+                                            column(6,
+                                                   box(title = textOutput("text"), 
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 12,
+                                                    plotOutput("hist1", 
+                                                    height="34vh"), 
+                                                    height="40vh")
+                                            ),
+                                            column(1,
+                                                box(
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 180,
+                                                    DT::dataTableOutput("dailyTable"), 
+                                                    height="40vh"
+                                                )
+                                            ),
+                                            column(2,
+                                                box( 
+                                                    title = "something", 
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 12,
+                                                    plotOutput("histHourly", height="34vh"), 
+                                                    height="40vh"
+                                                )
+                                            ),
+                                            column(1,
+                                                box(
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 180, 
+                                                    title="table for hourly",
+                                                    dataTableOutput("hourlyTable"), 
+                                                    height="40vh"
+                                                )
+                                            ),
+                                            column(1,
+                                                box( 
+                                                    title = "Days of the  Week", 
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 12,
+                                                    plotOutput("histDay", height="34vh"), 
+                                                    height="40vh"
+                                                )
+                                            ),
+                                            column(1,
+                                                box(
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 180,
+                                                    dataTableOutput("dayTable"), 
+                                                    height="40vh"
+                                                )
+                                            )
+                                        ),
+                                        fluidRow(
+                                            style='height:50vh; margin-top: 100px',
+                                            column(3,
+                                                leafletOutput("main_map", height="50vh")
+                                            ),
+                                            column(2,
+                                                box( 
+                                                    title = "Month", 
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 12,
+                                                    plotOutput("histMonthly", height="34vh"), 
+                                                    height="40vh"
+                                                )
+                                            ),
+                                            column(1,
+                                                box(
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 180,
+                                                    dataTableOutput("monthlyTable"), 
+                                                    height="40vh"
+                                                )
+                                            ),
+                                            column(2,
+                                                box( 
+                                                    title = "Binned Mileage", 
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 12,
+                                                    plotOutput("histBinMile", height="34vh"), 
+                                                    height="40vh"
+                                                ), 
+                                                height="40vh"
+                                            ),
+                                            column(1,
+                                                box(
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 180,
+                                                    dataTableOutput("binTable"), 
+                                                    height="40vh"
+                                                )
+                                            ),
+                                            column(2,
+                                                box( 
+                                                    title = "Binned Trip Time", 
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 12,
+                                                    plotOutput("histTripTime", height="34vh"), 
+                                                    height="40vh"
+                                                ), 
+                                                height="40vh"
+                                            ),
+                                            column(1,
+                                                box(
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 180,
+                                                    dataTableOutput("tripTable"), 
+                                                    height="40vh"
+                                                )
+                                            )
+                                        )
+                                    )
                                 )
-                              ),
-                              fluidRow(
-                                column(6,
-                                       box( title = "Monthly entries", solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("monthly"), dataTableOutput("tableMonthly")
-                                       )
-                                ),
-                                column(6, 
-                                       box( title = "Day of Week entries", solidHeader = TRUE, status = "primary", width = 12,
-                                            plotOutput("weekly"), dataTableOutput("tableWeekly")
-                                       )
+                            ),
+                            tabItem(tabName="yearlyPlots",
+                                fluidRow(
+                                    column(2,
+                                        fluidRow(style="height:40vh"),
+                                        p("Input controls"),
+                                        selectInput("years", "Select the year", years, selected = "2021"),
+                                        selectInput(inputId = "yearly_station", label = "Select station", choices = NULL),
+                                        selectInput("order_for_single", "Select chart Type", c("BarPlot", "Table"), selected = "BarPlot")
+                                    ),
+                                    column(10,
+                                        column(6, 
+                                            fluidRow(style="height:40vh", 
+                                                   box( title = "Daily entries", solidHeader = TRUE, status = "primary", width = 12,
+                                                        plotOutput("daily"), dataTableOutput("tableDaily")
+                                                   )
+                                            ),
+                                            fluidRow(style="height: 40vh", 
+                                                   #  leafletOutput("mymap2")
+                                            )
+                                        ),
+                                        column(4,
+                                            fluidRow(
+                                                column(12, 
+                                                    box( title = "Yearly entries", solidHeader = TRUE, status = "primary", width = 12,
+                                                        plotOutput("yearly"), dataTableOutput("tableYearly")
+                                                    )
+                                                )
+                                            ),
+                                            fluidRow(
+                                                column(6,
+                                                    box( title = "Monthly entries", solidHeader = TRUE, status = "primary", width = 12,
+                                                        plotOutput("monthly"), dataTableOutput("tableMonthly")
+                                                    )
+                                                ),
+                                                column(6, 
+                                                    box( title = "Day of Week entries", solidHeader = TRUE, status = "primary", width = 12,
+                                                        plotOutput("weekly"), dataTableOutput("tableWeekly")
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
                                 )
-                                
-                              )
-                              
-                       )
-                       
-                )
-                
-              )
-              
-      ),
-      
-      tabItem(tabName= "about",
-              h2("About"), 
-              p("Application written by Gautam Kushwah & Add your name here for CS424 spring 2022 taught by Dr. Andrew Johnson"),
-              p("Data taken from https://data.cityofchicago.org/Transportation/CTA-Ridership-L-Station-Entries-Daily-Totals/5neh-572f"),
-              p("The app helps visualize CTA L data over the last 20 years and helps uncover trends in data"),
-              p("Reference for R functions through https://shiny.rstudio.com/reference/shin")
+                            ),
+                            tabItem(
+                                tabName= "about",
+                                h2("About"), 
+                                p("Application written by Gautam Kushwah & Add your name here for CS424 spring 2022 taught by Dr. Andrew Johnson"),
+                                p("Data taken from https://data.cityofchicago.org/Transportation/CTA-Ridership-L-Station-Entries-Daily-Totals/5neh-572f"),
+                                p("The app helps visualize CTA L data over the last 20 years and helps uncover trends in data"),
+                                p("Reference for R functions through https://shiny.rstudio.com/reference/shin")
+                            )
+                        )
+                    )
       )
-      
-    )
-  )
-  
-  
-)
 
 # Define server logic required to draw a histogram
 
 ####jump to reactive
 server <- function(input, output, session) {
-  mode <- reactive({
-            if(input$radioMode == "To") return("Dropoff") else return("Pickup")
-        })
-  time_format <- reactive({input$radioTime})
-  community <- reactive({
-                return(which(community_areas == input$community))
-  })   #order for the bar plot
-  distance_format <- reactive({input$Distance})
-  outside_chicago <- reactive({input$outsideChicago})
-  taxi_company <- reactive({
-                return(which(values == input$taxiCompany))
+
+    mode <- reactive({
+        if(input$radioMode == "To") return("Dropoff") else return("Pickup")
     })
-  
+    time_format <- reactive({
+        input$radioTime
+    })
+    community <- reactive({
+        return(which(community_areas == input$community))
+    })   
+    distance_format <- reactive({
+        input$Distance
+    })
+    outside_chicago <- reactive({
+        input$outsideChicago
+    })
+    taxi_company <- reactive({
+        return(which(values == input$taxiCompany))
+    })
 
-
-
-  daily_reactive <- reactive({
-
+    daily_reactive <- reactive({
         if(community() != 79 && taxi_company() != 59){
+
             if(mode() == "Dropoff"){
                 daily_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
             }
@@ -437,7 +434,9 @@ server <- function(input, output, session) {
                 daily_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
             }
             daily_rides_local <- daily_rides_local[, .N, by=Date]
+
         }else if (community() == 79 && taxi_company() != 59 ){
+
             if(mode() == "Dropoff"){
                 daily_rides_local <- taxi[ Company == taxi_company()  ]
             }
@@ -445,7 +444,9 @@ server <- function(input, output, session) {
                 daily_rides_local <- taxi[ Company == taxi_company()  ]
             }
             daily_rides_local <- daily_rides_local[, .N, by=Date]
+
         }else if(community()!= 79 && taxi_company() == 59 ){
+
             if(mode() == "Dropoff"){
                 daily_rides_local <- taxi[ Dropoff== community()  ]
             }
@@ -453,151 +454,174 @@ server <- function(input, output, session) {
                 daily_rides_local <- taxi[ Pickup== community()  ]
             }
             daily_rides_local <- daily_rides_local[, .N, by=Date]
+
         }else{
+
             daily_rides_local <- daily_rides
+
         }
         return(daily_rides_local)
-  })
+    })
 
 
 
-  hourly_reactive <- reactive({
+    hourly_reactive <- reactive({
 
-    if(community() != 79 && taxi_company() != 59){
-        if(mode() == "Dropoff"){
-            hourly_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
-        }
-        else{
-            hourly_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
-        }
-        hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
-    }else if (community() == 79 && taxi_company() != 59 ){
-        if(mode() == "Dropoff"){
-            hourly_rides_local <- taxi[ Company == taxi_company()  ]
-        }
-        else{
-            hourly_rides_local <- taxi[ Company == taxi_company()  ]
-        }
-        hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
-    }else if(community()!= 79 && taxi_company() == 59 ){
-        if(mode() == "Dropoff"){
-            hourly_rides_local <- taxi[ Dropoff== community()  ]
-        }
-        else{
-            hourly_rides_local <- taxi[ Pickup== community()  ]
-        }
-        hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
-    }else{
-        hourly_rides_local <- hourly_rides
-    }
+        if(community() != 79 && taxi_company() != 59){
 
-    return(hourly_rides_local)
+            if(mode() == "Dropoff"){
+                hourly_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
+            }
+            else{
+                hourly_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
+            }
+            hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
 
-  })
+        }else if (community() == 79 && taxi_company() != 59 ){
 
+            if(mode() == "Dropoff"){
+                hourly_rides_local <- taxi[ Company == taxi_company()  ]
+            }
+            else{
+                hourly_rides_local <- taxi[ Company == taxi_company()  ]
+            }
+            hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
 
+        }else if(community()!= 79 && taxi_company() == 59 ){
 
-  weekday_reactive <- reactive({
+            if(mode() == "Dropoff"){
+                hourly_rides_local <- taxi[ Dropoff== community()  ]
+            }
+            else{
+                hourly_rides_local <- taxi[ Pickup== community()  ]
+            }
+            hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
 
-    if(community() != 79 && taxi_company() != 59){
-        if(mode() == "Dropoff"){
-            weekdays_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
+        }else{
+
+            hourly_rides_local <- hourly_rides
+
         }
-        else{
-            weekdays_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
-        }
-        weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
-        weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
-    }else if (community() == 79 && taxi_company() != 59 ){
-        if(mode() == "Dropoff"){
-            weekdays_rides_local <- taxi[ Company == taxi_company()  ]
-        }
-        else{
-            weekdays_rides_local <- taxi[ Company == taxi_company()  ]
-        }
-        weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
-        weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
-    }else if(community()!= 79 && taxi_company() == 59 ){
-        if(mode() == "Dropoff"){
-            weekdays_rides_local <- taxi[ Dropoff== community()  ]
-        }
-        else{
-            weekdays_rides_local <- taxi[ Pickup== community()  ]
-        }
-        weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
-        weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
-    }else{
-        weekdays_rides_local <- weekdays_rides
-    }
 
-    return(weekdays_rides_local)
-
-  })
+        return(hourly_rides_local)
+    })
 
 
 
-  month_reactive <- reactive({
+    weekday_reactive <- reactive({
 
-    if(community() != 79 && taxi_company() != 59){
-        if(mode() == "Dropoff"){
-            month_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
-        }
-        else{
-            month_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
-        }
-        month_rides_local <- month_rides_local[, .N, by=month(Date)]
-        month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
-    }else if (community() == 79 && taxi_company() != 59 ){
-        if(mode() == "Dropoff"){
-            month_rides_local <- taxi[ Company == taxi_company()  ]
-        }
-        else{
-            month_rides_local <- taxi[ Company == taxi_company()  ]
-        }
-        month_rides_local <- month_rides_local[, .N, by=month(Date)]
-        month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
-    }else if(community()!= 79 && taxi_company() == 59 ){
-        if(mode() == "Dropoff"){
-            month_rides_local <- taxi[ Dropoff== community()  ]
-        }
-        else{
-            month_rides_local <- taxi[ Pickup== community()  ]
-        }
-        month_rides_local <- month_rides_local[, .N, by=month(Date)]
-        month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
-    }else{
-        month_rides_local <- month_rides
-    }
+        if(community() != 79 && taxi_company() != 59){
 
-    return(month_rides_local)
+            if(mode() == "Dropoff"){
+                weekdays_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
+            }
+            else{
+                weekdays_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
+            }
+            weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
+            weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
 
-  })
+        }else if (community() == 79 && taxi_company() != 59 ){
+
+            if(mode() == "Dropoff"){
+                weekdays_rides_local <- taxi[ Company == taxi_company()  ]
+            }
+            else{
+                weekdays_rides_local <- taxi[ Company == taxi_company()  ]
+            }
+            weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
+            weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
+
+        }else if(community()!= 79 && taxi_company() == 59 ){
+
+            if(mode() == "Dropoff"){
+                weekdays_rides_local <- taxi[ Dropoff== community()  ]
+            }
+            else{
+                weekdays_rides_local <- taxi[ Pickup== community()  ]
+            }
+            weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
+            weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
+
+        }else{
+
+            weekdays_rides_local <- weekdays_rides
+
+        }
+
+        return(weekdays_rides_local)
+
+    })
+
+
+
+    month_reactive <- reactive({
+
+        if(community() != 79 && taxi_company() != 59){
+            if(mode() == "Dropoff"){
+                month_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
+            }
+            else{
+                month_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
+            }
+            month_rides_local <- month_rides_local[, .N, by=month(Date)]
+            month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
+        }else if (community() == 79 && taxi_company() != 59 ){
+            if(mode() == "Dropoff"){
+                month_rides_local <- taxi[ Company == taxi_company()  ]
+            }
+            else{
+                month_rides_local <- taxi[ Company == taxi_company()  ]
+            }
+            month_rides_local <- month_rides_local[, .N, by=month(Date)]
+            month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
+        }else if(community()!= 79 && taxi_company() == 59 ){
+            if(mode() == "Dropoff"){
+                month_rides_local <- taxi[ Dropoff== community()  ]
+            }
+            else{
+                month_rides_local <- taxi[ Pickup== community()  ]
+            }
+            month_rides_local <- month_rides_local[, .N, by=month(Date)]
+            month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
+        }else{
+            month_rides_local <- month_rides
+        }
+
+        return(month_rides_local)
+
+    })
 
 
 
 
 
  ##################### Histograms #################### 
-  output$selectedVar <- renderText({
+    output$selectedVar <- renderText({
         paste("mode() taxi[Company=",taxi_company()," & ", mode(), "==",  community(), "]")
     })
   
 
-  output$hist1 <- renderPlot({
-    print("Daily plot")
+    output$hist1 <- renderPlot({
+        print("Daily plot")
     
-    g<- ggplot(data = daily_reactive(), aes(x = Date, y = N)) +
-          geom_bar(stat="identity", fill="steelblue", width=0.9) +
-          labs(title = "Taxi Rides per Day for the year of 2019",
-               #subtitle = sub,
-               x = "Date", 
-               y = "Rides") +
-          scale_x_date(date_labels = "%d-%b", breaks = date_breaks("months"),date_minor_breaks="days" ) +
-          scale_y_continuous(labels = scales::comma)   
+        g<- ggplot(
+            data = daily_reactive(), 
+            aes(x = Date, y = N)) +
+            geom_bar(
+                stat="identity", 
+                fill="steelblue", 
+                width=0.9) +
+            labs(
+                title = "Taxi Rides per Day for the year of 2019",
+                x = "Date", 
+                y = "Rides") +
+                scale_x_date(date_labels = "%d-%b", breaks = date_breaks("months"),date_minor_breaks="days" ) +
+                scale_y_continuous(labels = scales::comma)   
     
-    print("plotted daily plot")
-    return(g)
-  })
+        print("plotted daily plot")
+        return(g)
+    })
   
 
 
@@ -609,163 +633,148 @@ server <- function(input, output, session) {
 
 
 
+    #For the main leaflet plot
+    output$main_map <- renderLeaflet({
+        map_plot <- map_plot %>%
+        removeShape(layerId = "selected")
+        return(map_plot)
+    })
 
-
-
-
-
-
-
-#For the main leaflet plot
- output$main_map <- renderLeaflet({
-    map_plot <- map_plot %>%
-    removeShape(layerId = "selected")
-      
-    return(map_plot)
-  })
-
-  #Change value of Selectize input on map click
-  observeEvent(input$main_map_shape_click,{
-    print("Community cicked on map")
-    
-    #updating select-input based on map
-    click <- input$main_map_shape_click
-    community_id <- click$id
-    print(community_id)
-    print(community_areas[as.numeric(community_id)])
-    isolate(
-    updateSelectInput(session, "community", 
-                      selected = community_areas[as.numeric(community_id)])
-    )
-  })
+    #Change value of Selectize input on map click
+    observeEvent(input$main_map_shape_click,{
+        print("Community cicked on map")
+        
+        #updating select-input based on map
+        click <- input$main_map_shape_click
+        community_id <- click$id
+        print(community_id)
+        print(community_areas[as.numeric(community_id)])
+        isolate(
+            updateSelectInput(
+                session, 
+                "community", 
+                selected = community_areas[as.numeric(community_id)])
+        )
+    })
   
     
     observeEvent(input$community,{
-    print("select community chosen")
-    comm_name <- input$community
-    l <- sprintf(
-      "<strong>%s</strong><br/>",
-      comm_name
-      ) %>% lapply(htmltools::HTML)
-    comm_id <- which(community_areas == comm_name)
-    shinyjs::js$shapeClick(comm_id)
-    to_highlight <- subset(community_shp, area_numbe == comm_id)
-    leafletProxy("main_map", session) %>% 
-    removeShape(layerId = "selected") %>%
-    addPolygons(layerId = 'selection',data = to_highlight, fill =  "#D24618", color = "blue", 
-    popup = comm_name)
-  })
+        print("select community chosen")
+        comm_name <- input$community
+        l <- sprintf(
+            "<strong>%s</strong><br/>",
+            comm_name
+            ) %>% 
+            lapply(htmltools::HTML)
+        comm_id <- which(community_areas == comm_name)
+        shinyjs::js$shapeClick(comm_id)
+        to_highlight <- subset(community_shp, area_numbe == comm_id)
+        leafletProxy("main_map", session) %>% 
+            removeShape(layerId = "selected") %>%
+            addPolygons(
+                layerId = 'selection',
+                data = to_highlight, 
+                fill =  "#D24618", 
+                color = "blue", 
+                popup = comm_name
+            )
+    })
   
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  output$histHourly <- renderPlot({
+    output$histHourly <- renderPlot({
    
 
-    g <- ggplot(data = hourly_reactive(), aes(x = factor(Hour), y = N)) +
-      geom_bar(stat="identity", fill="steelblue") +
-      labs(title = "Taxi Rides per Day for the year of 2019",
-           #subtitle = sub,
-           x = "Hour", 
-           y = "Rides") 
-      
+        g <-ggplot(data = hourly_reactive(), aes(x = factor(Hour), y = N)) +
+            geom_bar(stat="identity", fill="steelblue") +
+            labs(
+                title = "Taxi Rides per Day for the year of 2019",
+                x = "Hour", 
+                y = "Rides"
+            ) 
+          
 
-    if(dim(hourly_reactive())[1] != 0){
-        if(time_format() == "12HR"){
-          g <- g + scale_x_discrete(labels = time_in_12, guide=guide_axis( angle = 45)) + scale_y_continuous(labels = scales::comma) 
-        }else{
-            g <- g + scale_x_discrete(labels = time_in_24, guide=guide_axis( angle = 45)) + scale_y_continuous(labels = scales::comma) 
+        if( dim(hourly_reactive())[1] != 0 ){
+            if(time_format() == "12HR"){
+                g <- g + scale_x_discrete(labels = time_in_12, guide=guide_axis( angle = 45)) + scale_y_continuous(labels = scales::comma) 
+            }else{
+                g <- g + scale_x_discrete(labels = time_in_24, guide=guide_axis( angle = 45)) + scale_y_continuous(labels = scales::comma) 
+            }
         }
-    }
-    print("plotted hourly")
-    return(g)
-  })
+        print("plotted hourly")
+
+        return(g)
+
+    })
   
   
-  output$histDay <- renderPlot({
+    output$histDay <- renderPlot({
     
-    if(dim(weekday_reactive())[1] != 0){
-       g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), guide=guide_axis( angle = 45))
-    }
-    else{
-        g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  
-    }
-    print("plotting day of the week")
+        if(dim(weekday_reactive())[1] != 0){
+           g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), guide=guide_axis( angle = 45))
+        }
+        else{
+            g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  
+        }
+        print("plotting day of the week")
+        
+        return(g)
     
-    return(g)
     
-    
-  })
+     })
 
 
 
 
-  output$histCommunity <- renderPlot({
-    
+    output$histCommunity <- renderPlot({
     
         
-        communityDF <- taxi[Pickup == 44]
             
-        communityDF <- communityDF[, .N, by=Dropoff]
+            communityDF <- taxi[Pickup == 44]
+                
+            communityDF <- communityDF[, .N, by=Dropoff]
+            
         
-    
-    
-    
-    # f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
-    g<- ggplot(communityDF, aes(x= factor(Dropoff), y=N)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(guide=guide_axis( angle = 45)) + coord_flip()
-    print("plotting day of the week")
-    return(g)
-  })
+        
+        
+        # f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
+        g<- ggplot(communityDF, aes(x= factor(Dropoff), y=N)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(guide=guide_axis( angle = 45)) + coord_flip()
+        print("plotting day of the week")
+        return(g)
+    })
   
   
   
   
-  output$histMonthly <- renderPlot({
-    
-    if(dim(month_reactive())[1] != 0 ){
-         g <- ggplot(month_reactive(), aes(x= factor(newMonth), y= N)) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") +   scale_x_discrete(labels = months, guide=guide_axis( angle = 45))
-    }else{
-        g <- ggplot(month_reactive(), aes(x= factor(newMonth), y= N)) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") 
-    }
-    
-    print("plotting monthly")
-    return(g)
-  })
+    output$histMonthly <- renderPlot({
+        
+        if( dim(month_reactive())[1] != 0 ){
+            g <- ggplot(month_reactive(), aes(x= factor(newMonth), y= N)) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") +   scale_x_discrete(labels = months, guide=guide_axis( angle = 45))
+        }else{
+            g <- ggplot(month_reactive(), aes(x= factor(newMonth), y= N)) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") 
+        }
+        
+        print("plotting monthly")
+        return(g)
+    })
   
   
   
-  output$histBinMile <- renderPlot({
-    print("plotting Bin Mile")
-    binned_mile <- taxi %>% mutate(distance_bin = cut_number(Miles*1.609 , n = 6))
-    binned_mile <- binned_mile[, .N, by=distance_bin]
+    output$histBinMile <- renderPlot({
+        print("plotting Bin Mile")
+        binned_mile <- taxi %>% mutate(distance_bin = cut_number(Miles*1.609 , n = 6))
+        binned_mile <- binned_mile[, .N, by=distance_bin]
 
-     ggplot(binned_mile, aes(x = distance_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(title = "Taxi Rides Binned")
-    
-  })
-  output$histTripTime <- renderPlot({
-    print("plotting Bin Trip")
-    binned_time <- taxi %>% mutate(time_bin = cut_number(Duration, n = 6))
-    binned_time <- binned_time[, .N, by=time_bin]
-    ggplot(binned_time, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(title = "Taxi Rides Binned by time")
-    
-  })
+        ggplot(binned_mile, aes(x = distance_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(title = "Taxi Rides Binned")
+    })
+
+
+    output$histTripTime <- renderPlot({
+        print("plotting Bin Trip")
+        binned_time <- taxi %>% mutate(time_bin = cut_number(Duration, n = 6))
+        binned_time <- binned_time[, .N, by=time_bin]
+        ggplot(binned_time, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(title = "Taxi Rides Binned by time")
+      })
   
 
   ##################### END Histograms ####################
@@ -782,77 +791,60 @@ server <- function(input, output, session) {
 
    # Commenting out all the tables
   
-  output$dailyTable <- DT::renderDataTable({
-    DT <-as.data.frame(daily_reactive())
-    datatable(DT, 
-              options = list(
-                searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
-                columnDefs = list(list(width = '200px', targets = "_all"))
-              )) %>% 
-      formatCurrency(2, currency = "", interval = 3, mark = ",")
+    output$dailyTable <- DT::renderDataTable({
+        DT <-as.data.frame(daily_reactive())
+        datatable(DT, 
+                  options = list(
+                    searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
+                    columnDefs = list(list(width = '200px', targets = "_all"))
+                  )) %>% 
+        formatCurrency(2, currency = "", interval = 3, mark = ",")
+      })
+  
+    output$hourlyTable <- renderDataTable({
+        datatable(hourly_reactive(), 
+                  options = list(
+                    searching = FALSE,pageLength = 5, lengthMenu = c(5, 10, 15),
+                    columnDefs = list(list(width = '200px', targets = "_all"))
+                  )) %>% 
+        formatCurrency(2, currency = "", interval = 3, mark = ",")
+    })
   
   
-  
-  })
-  
-  output$hourlyTable <- renderDataTable({
-  
-    datatable(hourly_reactive(), 
-              options = list(
-                searching = FALSE,pageLength = 5, lengthMenu = c(5, 10, 15),
-                columnDefs = list(list(width = '200px', targets = "_all"))
-              )) %>% 
-      formatCurrency(2, currency = "", interval = 3, mark = ",")
-  
-  
-  
-  })
-  
-  
-  output$dayTable <- renderDataTable({
-  
-    datatable(weekday_reactive(), 
-              options = list(
-                searching = FALSE,pageLength = 7, lengthMenu = c(5, 10, 15),
-                order = list(list(1, 'asc')),
-                columnDefs = list(list(width = '200px', targets = "_all"))
-              )) %>% 
-      formatCurrency(2, currency = "", interval = 3, mark = ",")
-  
-  
-  
-  })
+    output$dayTable <- renderDataTable({
+        
+        datatable(weekday_reactive(), 
+                  options = list(
+                    searching = FALSE,pageLength = 7, lengthMenu = c(5, 10, 15),
+                    order = list(list(1, 'asc')),
+                    columnDefs = list(list(width = '200px', targets = "_all"))
+                  )) %>% 
+        formatCurrency(2, currency = "", interval = 3, mark = ",")
+    })
 
   
-
+    output$monthlyTable <- renderDataTable({
   
-  
-  
-  output$monthlyTable <- renderDataTable({
-  
-    datatable(month_reactive(), 
-              options = list(
-                searching = FALSE,pageLength = 12,
-                order = list(list(1, 'asc')),
-                columnDefs = list(list(width = '200px', targets = "_all"))
-              )) %>% 
-      formatCurrency(2, currency = "", interval = 3, mark = ",")
+        datatable(month_reactive(), 
+                  options = list(
+                    searching = FALSE,pageLength = 12,
+                    order = list(list(1, 'asc')),
+                    columnDefs = list(list(width = '200px', targets = "_all"))
+                  )) %>% 
+        formatCurrency(2, currency = "", interval = 3, mark = ",")
     })
 
    output$tripTable <- renderDataTable({
-    tmp <- taxi %>% mutate(pop_cut = cut_number(Duration, n = 6))
-    tmp <- tmp %>%  group_by(pop_cut) %>% summarise(n_rides = n())
-    datatable(tmp, 
-              options = list(
-                searching = FALSE,pageLength = 12,
-                order = list(list(1, 'asc')),
-                columnDefs = list(list(width = '200px', targets = "_all"))
-              )) %>% 
-      formatCurrency(2, currency = "", interval = 3, mark = ",")
-  
-  
-  
-  })
+        tmp <- taxi %>% mutate(pop_cut = cut_number(Duration, n = 6))
+        tmp <- tmp %>%  group_by(pop_cut) %>% summarise(n_rides = n())
+        datatable(tmp, 
+                  options = list(
+                    searching = FALSE,pageLength = 12,
+                    order = list(list(1, 'asc')),
+                    columnDefs = list(list(width = '200px', targets = "_all"))
+                  )) %>% 
+        formatCurrency(2, currency = "", interval = 3, mark = ",")
+    })
   
   
   
