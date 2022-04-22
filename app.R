@@ -2,16 +2,16 @@
 library(lubridate)
 # library(DT)
 library(ggplot2)
-library(plotly)
+# library(plotly)
 library(leaflet)
 library(dplyr)
-library(tidyr)
+# library(tidyr)
 library(scales)
 library(shiny)
 library(shinyjs)
 library(shinydashboard)
-library(stringr)
-library(shinyjs)
+# library(stringr)
+# library(shinyjs)
 library(data.table)
 library(purrr)
 library(rgdal)
@@ -471,6 +471,7 @@ server <- function(input, output, session) {
         weekdays_rides_local <- comm_reactive()
         weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
         weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
+        # names(weekdays_rides_local)[names(weekdays_rides_local) == 'wday'] <- 'weekday'
         return(weekdays_rides_local)
 
     })
