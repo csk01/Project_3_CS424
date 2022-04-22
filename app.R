@@ -103,30 +103,6 @@ time_in_12 <- c('00:00 am','01:00 am','02:00 am','03:00 am','04:00 am','05:00 am
 months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'Novermber', 'December')
 
 
-# Summarize the number of taxi rides by day
-daily_rides <- taxi[, .N, by=list(Date)]
-
-print("daily summarized")
-
-# Summarize the number of taxi rides by hour
-hourly_rides <- taxi[, .N, by=Hour]
-
-print("hourly summarized")
-
-# Summarize the number of taxi rides by day of the week
-weekdays_rides <- taxi[, .N, by=wday(Date)]
-
-print("wday summarized")
-
-# Summarize the number of taxi rides by month
-month_rides <- taxi[, .N, by=month(Date)]
-
-print("monthly summarized")
-
-
-month_rides <- rename(month_rides, "newMonth" = "month" )
-weekdays_rides <- rename(weekdays_rides, "weekday" = "wday" )
-print("renaming")
 
 #defining basic leaflet map to add on to later
 map_plot <- leaflet() %>%
@@ -219,12 +195,15 @@ ui <- dashboardPage(
                                     column(10, 
                                         fluidRow(style='height:40vh',
                                             column(6,
-                                                   box(title = textOutput("text"), 
+                                                   box(
+                                                    title = "Daily Entries", 
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 12,
-                                                    plotOutput("hist1", 
-                                                    height="34vh"), 
+                                                    plotOutput(
+                                                        "hist1", 
+                                                        height="34vh"
+                                                    ), 
                                                     height="40vh")
                                             ),
                                             column(1,
@@ -238,7 +217,7 @@ ui <- dashboardPage(
                                             ),
                                             column(2,
                                                 box( 
-                                                    title = "something", 
+                                                    title = "Hourly Entries", 
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 12,
@@ -258,7 +237,7 @@ ui <- dashboardPage(
                                             ),
                                             column(1,
                                                 box( 
-                                                    title = "Days of the  Week", 
+                                                    title = "Entries: Day of the Week", 
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 12,
@@ -279,11 +258,17 @@ ui <- dashboardPage(
                                         fluidRow(
                                             style='height:50vh; margin-top: 100px',
                                             column(3,
-                                                leafletOutput("main_map", height="50vh")
+                                                box(
+                                                    status= "primary",
+                                                    solidHeader = FALSE,
+                                                    title="Chicago Community Map",
+                                                    width = 12,
+                                                    leafletOutput("main_map", height="50vh")
+                                                )
                                             ),
                                             column(2,
                                                 box( 
-                                                    title = "Month", 
+                                                    title = "Entries by Month", 
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 12,
@@ -354,16 +339,17 @@ ui <- dashboardPage(
                                         selectInput("order_for_single", "Select chart Type", c("BarPlot", "Table"), selected = "BarPlot")
                                     ),
                                     column(10,
-                                        column(6, 
-                                            fluidRow(style="height:40vh", 
-                                                   box( title = "Daily entries", solidHeader = TRUE, status = "primary", width = 12,
-                                                        plotOutput("daily"), dataTableOutput("tableDaily")
-                                                   )
+                                         column(6,
+                                                box( 
+                                                    title = "Binned Trip Time", 
+                                                    solidHeader = TRUE, 
+                                                    status = "primary", 
+                                                    width = 12,
+                                                    plotOutput("histTripTimeold", height="34vh"), 
+                                                    height="40vh"
+                                                ), 
+                                                height="40vh"
                                             ),
-                                            fluidRow(style="height: 40vh", 
-                                                   #  leafletOutput("mymap2")
-                                            )
-                                        ),
                                         column(4,
                                             fluidRow(
                                                 column(12, 
@@ -415,7 +401,7 @@ server <- function(input, output, session) {
         return(which(community_areas == input$community))
     })   
     distance_format <- reactive({
-        input$Distance
+        input$radioDistance
     })
     outside_chicago <- reactive({
         input$outsideChicago
@@ -424,85 +410,57 @@ server <- function(input, output, session) {
         return(which(values == input$taxiCompany))
     })
 
-    daily_reactive <- reactive({
+
+    comm_reactive <- reactive({
         if(community() != 79 && taxi_company() != 59){
 
             if(mode() == "Dropoff"){
-                daily_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
+                common_DT <- taxi[ Company == taxi_company() & Dropoff== community() ]
             }
             else{
-                daily_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
+                common_DT <- taxi[ Company == taxi_company() & Pickup== community() ]
             }
-            daily_rides_local <- daily_rides_local[, .N, by=Date]
+            return(common_DT)
 
         }else if (community() == 79 && taxi_company() != 59 ){
 
             if(mode() == "Dropoff"){
-                daily_rides_local <- taxi[ Company == taxi_company()  ]
+                common_DT <- taxi[ Company == taxi_company()  ]
             }
             else{
-                daily_rides_local <- taxi[ Company == taxi_company()  ]
+                common_DT <- taxi[ Company == taxi_company()  ]
             }
-            daily_rides_local <- daily_rides_local[, .N, by=Date]
+            return(common_DT)
 
         }else if(community()!= 79 && taxi_company() == 59 ){
 
             if(mode() == "Dropoff"){
-                daily_rides_local <- taxi[ Dropoff== community()  ]
+                common_DT <- taxi[ Dropoff== community()  ]
             }
             else{
-                daily_rides_local <- taxi[ Pickup== community()  ]
+                common_DT <- taxi[ Pickup== community()  ]
             }
-            daily_rides_local <- daily_rides_local[, .N, by=Date]
+            return(common_DT)
 
         }else{
-
-            daily_rides_local <- daily_rides
+            common_DT <- taxi
+            return(common_DT)
 
         }
+
+    })
+
+    daily_reactive <- reactive({
+        daily_rides_local <- comm_reactive()
+        daily_rides_local <- daily_rides_local[, .N, by=Date]
         return(daily_rides_local)
     })
 
 
 
     hourly_reactive <- reactive({
-
-        if(community() != 79 && taxi_company() != 59){
-
-            if(mode() == "Dropoff"){
-                hourly_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
-            }
-            else{
-                hourly_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
-            }
-            hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
-
-        }else if (community() == 79 && taxi_company() != 59 ){
-
-            if(mode() == "Dropoff"){
-                hourly_rides_local <- taxi[ Company == taxi_company()  ]
-            }
-            else{
-                hourly_rides_local <- taxi[ Company == taxi_company()  ]
-            }
-            hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
-
-        }else if(community()!= 79 && taxi_company() == 59 ){
-
-            if(mode() == "Dropoff"){
-                hourly_rides_local <- taxi[ Dropoff== community()  ]
-            }
-            else{
-                hourly_rides_local <- taxi[ Pickup== community()  ]
-            }
-            hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
-
-        }else{
-
-            hourly_rides_local <- hourly_rides
-
-        }
-
+        hourly_rides_local <- comm_reactive()
+        hourly_rides_local <- hourly_rides_local[, .N, by=Hour]
         return(hourly_rides_local)
     })
 
@@ -510,45 +468,9 @@ server <- function(input, output, session) {
 
     weekday_reactive <- reactive({
 
-        if(community() != 79 && taxi_company() != 59){
-
-            if(mode() == "Dropoff"){
-                weekdays_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
-            }
-            else{
-                weekdays_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
-            }
-            weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
-            weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
-
-        }else if (community() == 79 && taxi_company() != 59 ){
-
-            if(mode() == "Dropoff"){
-                weekdays_rides_local <- taxi[ Company == taxi_company()  ]
-            }
-            else{
-                weekdays_rides_local <- taxi[ Company == taxi_company()  ]
-            }
-            weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
-            weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
-
-        }else if(community()!= 79 && taxi_company() == 59 ){
-
-            if(mode() == "Dropoff"){
-                weekdays_rides_local <- taxi[ Dropoff== community()  ]
-            }
-            else{
-                weekdays_rides_local <- taxi[ Pickup== community()  ]
-            }
-            weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
-            weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
-
-        }else{
-
-            weekdays_rides_local <- weekdays_rides
-
-        }
-
+        weekdays_rides_local <- comm_reactive()
+        weekdays_rides_local <- weekdays_rides_local[, .N, by=wday(Date)]
+        weekdays_rides_local <- rename(weekdays_rides_local, "weekday" = "wday" )
         return(weekdays_rides_local)
 
     })
@@ -557,39 +479,52 @@ server <- function(input, output, session) {
 
     month_reactive <- reactive({
 
-        if(community() != 79 && taxi_company() != 59){
-            if(mode() == "Dropoff"){
-                month_rides_local <- taxi[ Company == taxi_company() & Dropoff== community() ]
-            }
-            else{
-                month_rides_local <- taxi[ Company == taxi_company() & Pickup== community() ]
-            }
-            month_rides_local <- month_rides_local[, .N, by=month(Date)]
-            month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
-        }else if (community() == 79 && taxi_company() != 59 ){
-            if(mode() == "Dropoff"){
-                month_rides_local <- taxi[ Company == taxi_company()  ]
-            }
-            else{
-                month_rides_local <- taxi[ Company == taxi_company()  ]
-            }
-            month_rides_local <- month_rides_local[, .N, by=month(Date)]
-            month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
-        }else if(community()!= 79 && taxi_company() == 59 ){
-            if(mode() == "Dropoff"){
-                month_rides_local <- taxi[ Dropoff== community()  ]
-            }
-            else{
-                month_rides_local <- taxi[ Pickup== community()  ]
-            }
-            month_rides_local <- month_rides_local[, .N, by=month(Date)]
-            month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
-        }else{
-            month_rides_local <- month_rides
-        }
-
+        month_rides_local <- comm_reactive()
+        month_rides_local <- month_rides_local[, .N, by=month(Date)]
+        month_rides_local <- rename(month_rides_local, "newMonth" = "month" )
         return(month_rides_local)
 
+    })
+
+    bin_reactive_distance <- reactive({
+        binned_mile <- comm_reactive()
+        if(distance_format() == "KM"){
+            binned_mile <- binned_mile[, KM:=(Miles*1.609)]
+            binned_mile <- binned_mile[, distance_bin:=cut(
+                                                            KM,
+                                                            breaks = c(0.8, 5, 10, 20, 40, 60, 80, 100, Inf ),
+                                                            labels=c("<5 KM", "5-10 KM", "10-20 KM", "20-40 KM", "40-60 KM", "60-80 KM", "80-100 KM", ">100 KM"),
+                                                            include.lowest = TRUE
+                                                        )
+            ]
+        }else{
+            binned_mile <- binned_mile[, distance_bin:=cut(
+                                                            Miles,
+                                                            breaks = c(0.5, 1, 2, 5, 10, 20, 50, 100, Inf ),
+                                                            labels=c("<1 Mi", "1-2 Mi", "2-5 Mi", "5-10 Mi", "10-20 mi", "20-50 Mi", "50-100 Mi", ">100 Mi"),
+                                                            include.lowest = TRUE
+                                                        )
+            ]
+        }
+        
+                                    
+        binned_mile <- binned_mile[, .N, by=distance_bin]
+        return(binned_mile)        
+
+    })
+
+
+
+    bin_reactive_time <- reactive({
+        binned_time <- comm_reactive()
+        binned_time <- binned_time[, Mins:=(Duration/60)]
+        binned_time <- binned_time[, time_bin:=cut(
+                            Mins, 
+                            breaks=c(1, 5,10, 15, 30, 45, 60, 120, Inf), 
+                            labels = c("< 5 Mins", "5 - 10 Mins", "10 - 15 Mins", "15 - 30 Mins", "30 - 45 Mins", "45Mins - 1hr", "1 - 2Hr", "> 2Hr"), 
+                            include.lowest = TRUE )]
+        binned_time <- binned_time[, .N, by=time_bin]
+        return(binned_time)
     })
 
 
@@ -613,9 +548,9 @@ server <- function(input, output, session) {
                 fill="steelblue", 
                 width=0.9) +
             labs(
-                title = "Taxi Rides per Day for the year of 2019",
+                title = paste("Taxi Rides per Day, 2019 for ", input$community, " community & " ,input$taxiCompany, " service provider" ),
                 x = "Date", 
-                y = "Rides") +
+                y = "Total number of entries") +
                 scale_x_date(date_labels = "%d-%b", breaks = date_breaks("months"),date_minor_breaks="days" ) +
                 scale_y_continuous(labels = scales::comma)   
     
@@ -688,9 +623,9 @@ server <- function(input, output, session) {
         g <-ggplot(data = hourly_reactive(), aes(x = factor(Hour), y = N)) +
             geom_bar(stat="identity", fill="steelblue") +
             labs(
-                title = "Taxi Rides per Day for the year of 2019",
+                title = paste("", input$community, " community & " ,input$taxiCompany, " service provider" ),
                 x = "Hour", 
-                y = "Rides"
+                y = "Total number of entries"
             ) 
           
 
@@ -711,10 +646,10 @@ server <- function(input, output, session) {
     output$histDay <- renderPlot({
     
         if(dim(weekday_reactive())[1] != 0){
-           g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), guide=guide_axis( angle = 45))
+           g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), guide=guide_axis( angle = 45)) 
         }
         else{
-            g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  
+            g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  
         }
         print("plotting day of the week")
         
@@ -749,9 +684,9 @@ server <- function(input, output, session) {
     output$histMonthly <- renderPlot({
         
         if( dim(month_reactive())[1] != 0 ){
-            g <- ggplot(month_reactive(), aes(x= factor(newMonth), y= N)) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") +   scale_x_discrete(labels = months, guide=guide_axis( angle = 45))
+            g <- ggplot(month_reactive(), aes(x= factor(newMonth), y= N)) +labs(x="Month ", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") +   scale_x_discrete(labels = months, guide=guide_axis( angle = 45))
         }else{
-            g <- ggplot(month_reactive(), aes(x= factor(newMonth), y= N)) +labs(x="Month of the week", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") 
+            g <- ggplot(month_reactive(), aes(x= factor(newMonth), y= N)) +labs(x="Month ", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") 
         }
         
         print("plotting monthly")
@@ -759,21 +694,21 @@ server <- function(input, output, session) {
     })
   
   
-  
+  # *1.609
     output$histBinMile <- renderPlot({
         print("plotting Bin Mile")
-        binned_mile <- taxi %>% mutate(distance_bin = cut_number(Miles*1.609 , n = 6))
-        binned_mile <- binned_mile[, .N, by=distance_bin]
-
-        ggplot(binned_mile, aes(x = distance_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(title = "Taxi Rides Binned")
+        ggplot(bin_reactive_distance(), aes(x = distance_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(x= "Distance", y="Total number of entries", title = paste("Binned by distance for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma)
     })
 
 
     output$histTripTime <- renderPlot({
         print("plotting Bin Trip")
-        binned_time <- taxi %>% mutate(time_bin = cut_number(Duration, n = 6))
-        binned_time <- binned_time[, .N, by=time_bin]
-        ggplot(binned_time, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(title = "Taxi Rides Binned by time")
+        binned_time_local <- bin_reactive_time()
+        if(dim(binned_time_local)[1] == 0){
+            ggplot(binned_time_local, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(x= "Time", y="Total number of entries", title = paste("Binned by time for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma) 
+        }else{
+            ggplot(binned_time_local, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(x= "Time", y="Total number of entries", title = paste("Binned by time for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma) + scale_x_discrete(guide=guide_axis(angle =45))
+        }
       })
   
 
@@ -834,10 +769,19 @@ server <- function(input, output, session) {
         formatCurrency(2, currency = "", interval = 3, mark = ",")
     })
 
-   output$tripTable <- renderDataTable({
-        tmp <- taxi %>% mutate(pop_cut = cut_number(Duration, n = 6))
-        tmp <- tmp %>%  group_by(pop_cut) %>% summarise(n_rides = n())
-        datatable(tmp, 
+    output$binTable <- renderDataTable({
+         datatable(bin_reactive_distance(), 
+                   options = list(
+                     searching = FALSE,pageLength = 12,
+                     order = list(list(1, 'asc')),
+                     columnDefs = list(list(width = '200px', targets = "_all"))
+                   )) %>% 
+         formatCurrency(2, currency = "", interval = 3, mark = ",")
+     })
+
+    output$tripTable <- renderDataTable({
+        
+        datatable(bin_reactive_time(), 
                   options = list(
                     searching = FALSE,pageLength = 12,
                     order = list(list(1, 'asc')),
