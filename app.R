@@ -636,6 +636,26 @@ server <- function(input, output, session) {
   
   
   # })
+
+  output$dayTable <- renderDataTable({
+    communityDF <- taxi[Pickup == 44]
+            
+        communityDF <- communityDF %>%
+        group_by(Dropoff) %>%
+        summarise(n_rides = n())
+    datatable(communityDF, 
+              options = list(
+                searching = FALSE,pageLength = 7, lengthMenu = c(5, 10, 15),
+                order = list(list(1, 'asc')),
+                columnDefs = list(list(width = '200px', targets = "_all"))
+              )) %>% 
+      formatCurrency(2, currency = "", interval = 3, mark = ",")
+  
+  
+  
+  })
+
+  
   
   
   # output$monthlyTable <- renderDataTable({
