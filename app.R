@@ -121,17 +121,17 @@ months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'Aug
 
 #defining basic leaflet map to add on to later
 map_plot <- leaflet() %>%
-  addProviderTiles("OpenStreetMap") %>%
-  addResetMapButton() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  #addResetMapButton() %>%
   setMaxBounds(lng1 = -87.999, lat1=41.50, lng2=-87.00412 , lat2=42.380379 ) %>%
   #-87.94011, lat1=41.619478, lng2=-87.00412 , lat2=42.080379 ) %>%
   addPolygons( data = community_shp,
     color = "#444444",
-    weight = 1, 
+    weight = 3, 
     smoothFactor = 0.5,
      opacity = 1.0,
-     fillOpacity = 0.65,
-     dashArray = "3",
+     fillOpacity = 0.75,
+     dashArray = "2",
      highlightOptions = highlightOptions(color = "white",
      weight = 2,
      dashArray = "",
@@ -428,6 +428,9 @@ server <- function(input, output, session) {
     outside <- reactiveValues()
 
     taxi_company <- reactive({
+        print("taxi company chosen")
+        print(input$taxiCompany)
+        print(which(values == input$taxiCompany))
         return(which(values == input$taxiCompany))
     })
 
@@ -561,7 +564,6 @@ server <- function(input, output, session) {
 
     shape_reactive <-reactive({
         comm_df <-comm_reactive()
-        print(summary(comm_df))
         print(comm_df)
         comm_name <- community()
         mode <-mode()
@@ -662,12 +664,13 @@ server <- function(input, output, session) {
         
 
         #Bins and pal for map
-        bins <- c(0.001, 0.010, 0.100, 1.00,2.00,10,Inf) 
-        mypalette <- colorBin( palette="YlOrRd", domain=spdf$percentage ,bins=bins, pretty=FALSE)
+        bins <- c(0,0.025,0.1,0.5,1,2.5,5,10,Inf) 
+        mypalette <- colorBin( palette="RdBu", domain=spdf$percentage ,bins=bins, pretty=FALSE)
         
          
 
         map_plot <- map_plot %>% 
+        setMaxBounds(lng1 = -87.999, lat1=41.50, lng2=-87.00412 , lat2=42.380379 ) %>%
         addPolygons(data = spdf,
             color = ~mypalette(percentage),
             weight = 1, 
@@ -675,6 +678,7 @@ server <- function(input, output, session) {
             opacity = 1.0,
             fillOpacity = 0.65,
             dashArray = "3",
+            stroke = 1,
             highlightOptions = highlightOptions(color = "white",
                     weight = 2,
                     dashArray = "",
@@ -682,7 +686,9 @@ server <- function(input, output, session) {
         #popup=labels,
         label = labels,
         layerId = ~community_shp$Pickup)%>%
-        addLegend(pal=mypalette,values= bins,position="bottomright")
+        addLegend(pal=mypalette,values= bins,
+        position="bottomright", title = "Percentage of Rides(%)",
+        opacity = 0.8)
         if(outside_chicago()){
             print(outside$percentage)
             print(str(outside$percentage))
