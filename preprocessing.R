@@ -24,61 +24,46 @@ taxi <- read.table(file = "Taxi_Trips_-_2019.tsv", sep = "\t", header = TRUE, qu
 #Retaining only necessary columns and removing unwanted ones
 taxi <- select(taxi, Trip.Start.Timestamp, Trip.Seconds, Trip.Miles, Pickup.Community.Area, Dropoff.Community.Area, Company )
 
+print("selected cols needed")
+
 #Removing trips less than 0.5 and more than 100 miles and less than 60 seconds, and greater than 5 hours,
 taxi <- subset(taxi,  Trip.Miles >= 0.5 & Trip.Miles <= 100 & Trip.Seconds >= 60 & Trip.Seconds <= 18000 )
 dim(taxi)
 
-#converting factor to char
-taxi %>% modify_if(is.factor, as.character) -> taxi
+print("subset df")
+
+#Renaming cols 
+taxi <- taxi %>%
+  rename( Date = Trip.Start.Timestamp,
+          Duration = Trip.Seconds,
+          Miles = Trip.Miles,
+          Pickup = Pickup.Community.Area,
+          Dropoff = Dropoff.Community.Area)
+print("renamed cols")
 
 #Removing unwanted details from company names
 taxi$Company <- sub("[0-9]+ - [0-9]+ ", "", taxi$Company)
 taxi$Company <- sub("[0-9]+ - ", "", taxi$Company)
+print("cleaned up names")
 
-#Encoding taxi company name to integer to save space by using a lookup table
-hash <- new.env(hash = TRUE, parent = emptyenv(), size = 100L)
 
-# Helper functions -vectorize assign, get and exists for convenience
-assign_hash <- Vectorize(assign, vectorize.args = c("x", "value"))
-get_hash <- Vectorize(get, vectorize.args = "x")
-exists_hash <- Vectorize(exists, vectorize.args = "x")
-
-# Keys would be the unique name and the corresponding pair would be an integer from 1-58(total no of taxi company names)
-keys <- sort(unique(taxi$Company))
-values <- 1:58
-
-#assigning the hash
-assign_hash(keys, values, hash)
-
-#For retreiving values
-#get_hash('Flash Cab', hash)
-#hash[["24 Seven Taxi"]]
-
-#Using the hash table(dict) to convert company names from text to int cutting space needed by half
-taxi$Company <- ifelse( exists_hash(taxi$Company, hash), get_hash(taxi$Company, hash))
-head(taxi)
+#Encoding taxi company name to integer
+taxi$Company <- as.numeric(as.factor(taxi$Company))
+print("encoded company names")
+print(head(taxi))
 
 #Converting timestamp from char to posix
-taxi$Trip.Start.Timestamp <- strptime(taxi$Trip.Start.Timestamp, "%m/%d/%Y %I:%M:%S %p")
+taxi$Date <- strptime(taxi$Date, "%m/%d/%Y %I:%M:%S %p")
 
 #Creating a separate col and storing only the starting hour rather than the 15 minute intervals in 24hr format(removing min,sec and AM/PM)
-taxi$Hour <- strftime(taxi$Trip.Start.Timestamp, "%H")
+ taxi$Hour <- strftime(taxi$Date, "%H")
 
-#Storing only the date as hour is separately stored
-taxi$Trip.Start.Timestamp <- strptime(taxi$Trip.Start.Timestamp, "%Y-%m-%d")
+ #Storing only the date as hour is separately stored
+ taxi$Date <- strptime(taxi$Date, "%Y-%m-%d")
 
-#Converting NAs in Community Area code to 0 to save some more space
-#taxi$Pickup.Community.Area[is.na(taxi$Pickup.Community.Area)] <- 0
-#taxi$Dropoff.Community.Area[is.na(taxi$Dropoff.Community.Area)] <- 0
-
-#Renaming cols before chunking
-taxi <- taxi %>%
-  rename( Date = Trip.Start.Timestamp,
-         Duration = Trip.Seconds,
-         Miles = Trip.Miles,
-          Pickup = Pickup.Community.Area,
-          Dropoff = Dropoff.Community.Area)
-
+ print("date and hour fixed")
+ print(head(taxi))
+ 
 #Splitting data file into smaller chunks
 no_of_chunks <- 15
 split_vector <- ceiling(1: nrow(taxi)/nrow(taxi) * no_of_chunks)
