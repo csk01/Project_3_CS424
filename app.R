@@ -4,6 +4,7 @@ library(lubridate)
 library(ggplot2)
 # library(plotly)
 library(leaflet)
+library(leaflet.extras)
 library(dplyr)
 # library(tidyr)
 library(scales)
@@ -116,12 +117,14 @@ time_in_24 <-c( '0000',  '0100', '0200', '0300', '0400', '0500', '0600', '0070',
 time_in_12 <- c('00:00 am','01:00 am','02:00 am','03:00 am','04:00 am','05:00 am','06:00 am','07:00 am','08:00 am','09:00 am','10:00 am','11:00 am','12:00 pm','13:00 pm','14:00 pm','15:00 pm','16:00 pm','17:00 pm','18:00 pm','19:00 pm','20:00 pm','21:00 pm','22:00 pm','23:00 pm')
 
 months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'Novermber', 'December')
-print("Hi")
-print(sort(unique(taxi$community)))
+
 
 #defining basic leaflet map to add on to later
 map_plot <- leaflet() %>%
   addProviderTiles("OpenStreetMap") %>%
+  addResetMapButton() %>%
+  setMaxBounds(lng1 = -87.999, lat1=41.50, lng2=-87.00412 , lat2=42.380379 ) %>%
+  #-87.94011, lat1=41.619478, lng2=-87.00412 , lat2=42.080379 ) %>%
   addPolygons( data = community_shp,
     color = "#444444",
     weight = 1, 
@@ -428,37 +431,58 @@ server <- function(input, output, session) {
         return(which(values == input$taxiCompany))
     })
 
-
+    # #Toggle map view
+    #  observeEvent(input$community,{
+    #      print(community())
+    #      if(community()== 79){
+    #          shinyjs::disable("main_map")
+    #          #shinyjs::disable("date1")
+    #          }
+    #          else
+    #          {
+    #              shinyjs::enable("main_map")
+    #              }
+    #              })
 
     comm_reactive <- reactive({
         
+            # for specific community and taxi selected //Not All
             if(community() != 79 && taxi_company() != 59){
 
             if(mode() == "Dropoff"){
-                common_DT <- taxi[ Company == taxi_company() & Dropoff== community() ]
+                common_DT <- taxi %>% filter(Company == taxi_company() & Dropoff== community())
+                #common_DT <- taxi[ Company == taxi_company() & Dropoff== community() ]
             }
             else{
-                common_DT <- taxi[ Company == taxi_company() & Pickup== community() ]
+                common_DT <- taxi %>% filter(Company == taxi_company() & Pickup== community())
+                #common_DT <- taxi[ Company == taxi_company() & Pickup== community() ]
             }
             return(common_DT)
 
+        # All community, one taxi company
         }else if (community() == 79 && taxi_company() != 59 ){
 
             if(mode() == "Dropoff"){
-                common_DT <- taxi[ Company == taxi_company()  ]
+                common_DT <- taxi %>% filter(Company == taxi_company())
+                #common_DT <- taxi[ Company == taxi_company()  ]
             }
             else{
-                common_DT <- taxi[ Company == taxi_company()  ]
+                common_DT <- taxi %>% filter(Company == taxi_company())
+                #common_DT <- taxi[ Company == taxi_company()  ]
+                
             }
             return(common_DT)
 
+        #one community, all taxi
         }else if(community()!= 79 && taxi_company() == 59 ){
 
             if(mode() == "Dropoff"){
-                common_DT <- taxi[ Dropoff== community()  ]
+                common_DT <- taxi %>% filter(Dropoff== community())
+                #common_DT <- taxi[ Dropoff== community()  ]
             }
             else{
-                common_DT <- taxi[ Pickup== community()  ]
+                common_DT <- taxi %>% filter(Pickup== community() )
+                #common_DT <- taxi[ Pickup== community()  ]
             }
             return(common_DT)
 
@@ -537,6 +561,8 @@ server <- function(input, output, session) {
 
     shape_reactive <-reactive({
         comm_df <-comm_reactive()
+        print(summary(comm_df))
+        print(comm_df)
         comm_name <- community()
         mode <-mode()
         if(mode() == "Pickup"){
@@ -634,23 +660,25 @@ server <- function(input, output, session) {
         print("inside leaflet map")
         spdf <- shape_reactive()
         
+
         #Bins and pal for map
         bins <- c(0.001, 0.010, 0.100, 1.00,2.00,10,Inf) 
         mypalette <- colorBin( palette="YlOrRd", domain=spdf$percentage ,bins=bins, pretty=FALSE)
         
+         
+
         map_plot <- map_plot %>% 
         addPolygons(data = spdf,
-        color = ~mypalette(percentage),
-        weight = 1, 
-        smoothFactor = 0.5,
-        opacity = 1.0,
-        fillOpacity = 0.65,
-        dashArray = "3",
-        highlightOptions = highlightOptions(color = "white",
-                weight = 2,
-                dashArray = "",
-                bringToFront = TRUE),
-        
+            color = ~mypalette(percentage),
+            weight = 1, 
+            smoothFactor = 0.5,
+            opacity = 1.0,
+            fillOpacity = 0.65,
+            dashArray = "3",
+            highlightOptions = highlightOptions(color = "white",
+                    weight = 2,
+                    dashArray = "",
+                    bringToFront = TRUE),
         #popup=labels,
         label = labels,
         layerId = ~community_shp$Pickup)%>%
@@ -661,7 +689,7 @@ server <- function(input, output, session) {
             map_plot <- map_plot %>% 
             addRectangles(
                 lat1 =41.970111, lat2=41.889261,
-                lng1=-87.459141, lng =-87.553412,
+                lng1=-87.459141, lng2=-87.553412,
                 fillColor = mypalette(outside$percentage),
                 label = "Outside Chicago",
                 weight = 1, 
@@ -769,14 +797,16 @@ server <- function(input, output, session) {
             
 
             if(input$radioMode=="To"){
-                communityDF <- taxi[Dropoff == community()]
+                communityDF <- taxi %>% filter(Dropoff == community())
+                #communityDF <- taxi[Dropoff == community()]
                 total_rides <- count(communityDF)
                 communityDF <- communityDF[, .N, by=Pickup]    
                 communityDF <- communityDF[, Percentage:=((N/as.integer(total_rides) )*100)]
                 communityDF <- communityDF %>% mutate(Pickup = community_areas[Pickup] )
                 g<- ggplot(communityDF, aes(x= factor(Pickup), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   + coord_flip()
             }else{
-                communityDF <- taxi[Pickup == community()]
+                communityDF <- taxi %>% filter(Pickup == community())
+                #communityDF <- taxi[Pickup == community()]
                 total_rides <- count(communityDF)
                 communityDF <- communityDF[, .N, by=Dropoff]
                 communityDF <- communityDF[, Percentage:=((N/as.integer(total_rides))*100)]
@@ -832,7 +862,7 @@ server <- function(input, output, session) {
       })
   
 
-  ##################### END Histograms ####################
+  #TABLES ================================================================
 
 
 
