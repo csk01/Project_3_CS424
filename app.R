@@ -101,17 +101,18 @@ community_areas <- c("Rogers Park", "West Ridge","Uptown","Lincoln Square","Nort
                      "Grand Boulevard","Kenwood","Washington Park","Hyde Park","Woodlawn","South Shore","Chatham","Avalon Park","South Chicago","Burnside",
                      "Calumet Heights","Roseland","Pullman","South Deering","East Side","West Pullman","Riverdale","Hegewisch","Garfield Ridge","Archer Heights",
                      "Brighton Park","McKinley Park","Bridgeport","New City","West Elsdon","Gage Park","Clearing","West Lawn","Chicago Lawn","West Englewood",
-                     "Englewood","Greater Grand Crossing","Ashburn","Auburn Gresham","Beverly","Washington Heights","Mount Greenwood","Morgan Park","O'Hare","Edgewater", "All of Chicago", "Outside Chicago")
+                     "Englewood","Greater Grand Crossing","Ashburn","Auburn Gresham","Beverly","Washington Heights","Mount Greenwood","Morgan Park","O'Hare","Edgewater", "All of Chicago")
 
+community_areas_outside <- append(community_areas, "Outside Chicago")
 #func to convert NAs in Pickup and Dropoff to 78)
 f_dowle3 = function(DT) {
 
   for (j in 3:5)
-    set(DT,which(is.na(DT[[j]])),j,78)
+    set(DT,which(is.na(DT[[j]])),j,79)
 }
 f_dowle3(taxi_outside)
 
-print("Converted NAs to 78")
+# print("Converted NAs to 78")
 # print(head(taxi_outside))
 
 years<-c(2001:2021)
@@ -182,13 +183,13 @@ ui <- dashboardPage(
                                             inputId = "radioMode",
                                             label = "Mode",
                                             choices = c("To", "From"),
-                                            selected = "From",
+                                            selected = "To",
                                             inline = FALSE,
                                             width = NULL
                                         ),
                                         selectInput(inputId = "community", label = "Select community", choices = sort(community_areas), selected="All of Chicago"),
                                         selectInput(inputId = "taxiCompany", label = "Select Taxi Company", choices = sort(values), selected = "All"),
-                                        uiOutput("testing"),
+                                        
                                         radioButtons(
                                             inputId = "radioTime",
                                             label = "Time Format",
@@ -422,7 +423,11 @@ server <- function(input, output, session) {
         input$radioTime
     })
     community <- reactive({
-        return(which(community_areas == input$community))
+        if(outside_chicago()){
+                which(community_areas_outside == input$community)
+        }else{
+               which(community_areas == input$community)
+        }
     })   
     distance_format <- reactive({
         input$radioDistance
@@ -439,21 +444,22 @@ server <- function(input, output, session) {
 
 
 ##########################
-# choices_community <- reactive({
-#     if(outside_chicago()){
-#         append(community_areas, "Outside Chicago")
-#     }else{
-#         community_areas <- community_areas[community_areas != "Outside Chicago"]
-#     }
-#     return(sort(community_areas))
-# })
+choices_community <- reactive({
+    if(outside_chicago()){
+        return(sort(community_areas_outside))
+    }else{
+        return(sort(community_areas))
+    }
+    
+})
 
-# choices_community_selected <- reactive({
-#     return(input$community)
-# })
-# observe({
-#     updateSelectInput(session = session, inputId = "community", choices = choices_community(), selected=choices_community_selected())
-#   })
+choices_community_selected <- reactive({
+    return(input$community)
+})
+observe({
+
+    updateSelectInput(session = session, inputId = "community", choices = choices_community(), selected=choices_community_selected())
+  })
 #########################
 
     comm_reactive <- reactive({
@@ -629,15 +635,6 @@ server <- function(input, output, session) {
 
 
 
-output$testing <- renderUI({
-        input$go # no-button
-        isolate( # no-button
-            numinputs <- lapply(seq(length.out = req(input$num)), function(i){
-                textInput(inputId = paste0("txt", i), label = paste0("Text input ", i))
-            })
-        ) # no-button
-    })
-
  ##################### Histograms #################### 
     output$selectedVar <- renderText({
         paste("mode() taxi[Company=",taxi_company()," & ", mode(), "==",  community(), "]")
@@ -812,13 +809,11 @@ output$testing <- renderUI({
 
 
     output$histCommunity <- renderPlot({
-    
-        
-            
-            
-            
-
-            
+            if(outside_chicago()){
+                taxi <- (taxi_outside)
+            }else{
+                taxi <- taxi_inside
+            }
 
             if(input$radioMode=="To"){
                 communityDF <- taxi[Dropoff == community()]
