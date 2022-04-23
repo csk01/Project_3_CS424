@@ -553,7 +553,9 @@ server <- function(input, output, session) {
 
                 # merged spatial df  file to plot heatmap
                 mynewspdf <- merge(community_shp, ride_percent, by.x = "area_numbe", by.y = "Dropoff", all.y = TRUE)
-
+                
+                temp <- ride_percent %>% filter(Dropoff==78)
+                outside$percentage <- temp$percentage
                 print("merged w shape file")
             }
         else{
@@ -564,9 +566,11 @@ server <- function(input, output, session) {
             ride_percent$percentage <- 100*(ride_percent$n_rides/sum(ride_percent$n_rides))
             #merged spatial df  file to plot heatmap
             mynewspdf <- merge(community_shp, ride_percent, by.x="area_numbe", by.y="Pickup" , all=FALSE)
+            
+            temp <- ride_percent %>% filter(Pickup==78)
+            outside$percentage <- temp$percentage
         }
         
-        outside$percentage <- ride_percent %>% filter(area_numbe==78)
         print("rider percent calculated")
         return(mynewspdf)
 
@@ -652,6 +656,8 @@ server <- function(input, output, session) {
         layerId = ~community_shp$Pickup)%>%
         addLegend(pal=mypalette,values= bins,position="bottomright")
         if(outside_chicago()){
+            print(outside$percentage)
+            print(str(outside$percentage))
             map_plot <- map_plot %>% 
             addRectangles(
                 lat1 =41.970111, lat2=41.889261,
