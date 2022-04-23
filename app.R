@@ -39,9 +39,9 @@ options(scipen=999)
 
 #Reading from the split csv files
 print("reading data")
-taxi <- do.call(rbind, lapply(list.files(pattern = "*.csv"), fread)) 
-taxi_chicago <- taxi
-taxi <- taxi[Pickup>=1 & Dropoff >=1]
+taxi_original <- do.call(rbind, lapply(list.files(pattern = "*.csv"), fread)) 
+taxi_outside <- taxi_original
+taxi_inside <- taxi_original[Pickup>=1 & Dropoff >=1]
 print("read data")
 
 #Reading community boundaries from a shape file 
@@ -67,16 +67,22 @@ get_hash <- Vectorize(get, vectorize.args = "x")
 exists_hash <- Vectorize(exists, vectorize.args = "x")
 
 #Edited company names to a more readable format 
-values <- c("24 Seven Taxi","312 Medallion","5 Star Taxi","Adwar H. Nikola","Ahzmi Inc","American United","American United Taxi Aff.",
-            "Arrington Enterprises","Babylon Express Inc.","Benny Jona","Blue Diamond","Blue Ribbon Taxi","Checker Taxi","Checker Taxi Aff.","Chicago Carriage Cab",
-            "Chicago Independents","Chicago Medallion","Chicago Star Taxicab","Chicago Taxicab","Choice Taxi","Chuks Cab","City Service","David K. Cab",
-            "Flash Cab","G.L.B. Cab","Globe Taxi","Gold Coast Taxi","Jay Kim","JBL Cab Inc.","KOAM Taxi","Leonard Cab","Luhak Corp","Medallion Leasin",
-            "Metro Jet Taxi A","N and W Cab","Nova Taxi Aff.","Omar Jada","Patriot Taxi","Petani Cab","RC Andrews Cab","Reny Cab","Salifu Bawa","Sam Mestas",
-            "Santamaria Express","Sbeih company","Sergey Cab","Setare Inc","Star North","Suburban Dispatch","Sun Taxi","T.A.S.","Tasha ride inc",
-            "Taxi Aff. Service Yellow","Taxi Aff. Services","Taxicab Insurance","Top Cab Aff.","U Taxicab","Yellow Cab", "All")
+values <- c('24 Seven Taxi','312 Medallion Management Corp','5 Star Taxi','Adwar H. Nikola',
+            'Ahzmi Inc','American United','American United Taxi Affiliation',
+            'Arrington Enterprises','Babylon Express Inc.','Benny Jona','Blue Diamond',
+            'Blue Ribbon Taxi Association Inc.','Checker Taxi','Checker Taxi Affiliation',
+            'Chicago Carriage Cab Corp','Chicago Independents','Chicago Medallion Management',
+            'Chicago Star Taxicab','Chicago Taxicab','Choice Taxi Association','Chuks Cab','City Service',
+            'David K. Cab Corp.','Flash Cab','G.L.B. Cab Co','Globe Taxi','Gold Coast Taxi','Jay Kim',
+            'JBL Cab Inc.','KOAM Taxi Association','Leonard Cab Co','Luhak Corp','Medallion Leasin',
+            'Metro Jet Taxi A','N and W Cab Co','Nova Taxi Affiliation Llc','Omar Jada',
+            'Patriot Taxi Dba Peace Taxi Associat','Petani Cab Corp','RC Andrews Cab','Reny Cab Co','Salifu Bawa',
+            'Sam Mestas','Santamaria Express, Alvaro Santamaria','Sbeih company','Sergey Cab Corp.','Setare Inc',
+            'Star North Management LLC','Sun Taxi','Tasha ride inc','Taxi Affiliation Service Yellow',
+            'Taxi Affiliation Services','Taxicab Insurance Agency, LLC','Top Cab Affiliation','U Taxicab','Yellow Cab', "All")
 
 #Keys are string values of numbers 
-keys <- sprintf("%s",seq(1:59))
+keys <- sprintf("%s",seq(1:57))
 
 #Assigning hash
 assign_hash(keys, values, hash)
@@ -95,7 +101,7 @@ community_areas <- c("Rogers Park", "West Ridge","Uptown","Lincoln Square","Nort
                      "Grand Boulevard","Kenwood","Washington Park","Hyde Park","Woodlawn","South Shore","Chatham","Avalon Park","South Chicago","Burnside",
                      "Calumet Heights","Roseland","Pullman","South Deering","East Side","West Pullman","Riverdale","Hegewisch","Garfield Ridge","Archer Heights",
                      "Brighton Park","McKinley Park","Bridgeport","New City","West Elsdon","Gage Park","Clearing","West Lawn","Chicago Lawn","West Englewood",
-                     "Englewood","Greater Grand Crossing","Ashburn","Auburn Gresham","Beverly","Washington Heights","Mount Greenwood","Morgan Park","O'Hare","Edgewater","Outside Chicago", "All of Chicago")
+                     "Englewood","Greater Grand Crossing","Ashburn","Auburn Gresham","Beverly","Washington Heights","Mount Greenwood","Morgan Park","O'Hare","Edgewater", "All of Chicago", "Outside Chicago")
 
 #func to convert NAs in Pickup and Dropoff to 78)
 f_dowle3 = function(DT) {
@@ -103,10 +109,10 @@ f_dowle3 = function(DT) {
   for (j in 3:5)
     set(DT,which(is.na(DT[[j]])),j,78)
 }
-f_dowle3(taxi)
+f_dowle3(taxi_outside)
 
 print("Converted NAs to 78")
-print(head(taxi))
+# print(head(taxi_outside))
 
 years<-c(2001:2021)
 
@@ -176,12 +182,13 @@ ui <- dashboardPage(
                                             inputId = "radioMode",
                                             label = "Mode",
                                             choices = c("To", "From"),
-                                            selected = "To",
+                                            selected = "From",
                                             inline = FALSE,
                                             width = NULL
                                         ),
                                         selectInput(inputId = "community", label = "Select community", choices = sort(community_areas), selected="All of Chicago"),
                                         selectInput(inputId = "taxiCompany", label = "Select Taxi Company", choices = sort(values), selected = "All"),
+                                        uiOutput("testing"),
                                         radioButtons(
                                             inputId = "radioTime",
                                             label = "Time Format",
@@ -431,8 +438,31 @@ server <- function(input, output, session) {
     })
 
 
+##########################
+# choices_community <- reactive({
+#     if(outside_chicago()){
+#         append(community_areas, "Outside Chicago")
+#     }else{
+#         community_areas <- community_areas[community_areas != "Outside Chicago"]
+#     }
+#     return(sort(community_areas))
+# })
+
+# choices_community_selected <- reactive({
+#     return(input$community)
+# })
+# observe({
+#     updateSelectInput(session = session, inputId = "community", choices = choices_community(), selected=choices_community_selected())
+#   })
+#########################
+
     comm_reactive <- reactive({
-        if(community() != 79 && taxi_company() != 59){
+        if(outside_chicago()){
+            taxi <- (taxi_outside)
+        }else{
+            taxi <- taxi_inside
+        }
+        if(community() != 78 && taxi_company() != 57){
 
             if(mode() == "Dropoff"){
                 common_DT <- taxi[ Company == taxi_company() & Dropoff== community() ]
@@ -442,7 +472,7 @@ server <- function(input, output, session) {
             }
             return(common_DT)
 
-        }else if (community() == 79 && taxi_company() != 59 ){
+        }else if (community() == 78 && taxi_company() != 57 ){
 
             if(mode() == "Dropoff"){
                 common_DT <- taxi[ Company == taxi_company()  ]
@@ -452,7 +482,7 @@ server <- function(input, output, session) {
             }
             return(common_DT)
 
-        }else if(community()!= 79 && taxi_company() == 59 ){
+        }else if(community()!= 78 && taxi_company() == 57 ){
 
             if(mode() == "Dropoff"){
                 common_DT <- taxi[ Dropoff== community()  ]
@@ -538,25 +568,34 @@ server <- function(input, output, session) {
         comm_df <-comm_reactive()
         print(comm_df)
         comm_name <- community()
-        mode <-mode()
         if(mode() == "Pickup"){
                 print("inside leaflet for pickup mode")
 
                 # Calculating percentage of rides from that comm area
-                ride_percent <- comm_df %>%
-                    group_by(Dropoff) %>%
-                    summarise(n_rides = n())
+                # ride_percent <- comm_df %>%
+                #     group_by(Dropoff) %>%
+                #     summarise(n_rides = n())
 
-                ride_percent$percentage <- 100 * (ride_percent$n_rides / sum(ride_percent$n_rides))
+                # ride_percent$percentage <- 100 * (ride_percent$n_rides / sum(ride_percent$n_rides))
+                
+
+                ride_percent <- comm_df
+                total_rides <- count(ride_percent)
+                ride_percent <- ride_percent[, .N, by=Dropoff]    
+                ride_percent <- ride_percent[, percentage:=((N/as.integer(total_rides) )*100)]
+                print("#########################################################")
                 print(summary(ride_percent))
                 print("percentage calculated")
 
+
+
                 # merged spatial df  file to plot heatmap
-                mynewspdf <- merge(community_shp, ride_percent, by.x = "area_numbe", by.y = "Dropoff", all.y = TRUE)
+                mynewspdf <- merge(community_shp, ride_percent, by.x = "area_numbe", by.y = "Dropoff", all = FALSE)
                 
                 temp <- ride_percent %>% filter(Dropoff==78)
                 outside$percentage <- temp$percentage
                 print("merged w shape file")
+                print(head(mynewspdf@data))
             }
         else{
             ride_percent <- comm_df %>% 
@@ -590,7 +629,14 @@ server <- function(input, output, session) {
 
 
 
-
+output$testing <- renderUI({
+        input$go # no-button
+        isolate( # no-button
+            numinputs <- lapply(seq(length.out = req(input$num)), function(i){
+                textInput(inputId = paste0("txt", i), label = paste0("Text input ", i))
+            })
+        ) # no-button
+    })
 
  ##################### Histograms #################### 
     output$selectedVar <- renderText({
@@ -634,12 +680,12 @@ server <- function(input, output, session) {
         print("inside leaflet map")
         spdf <- shape_reactive()
         
-
+        # print()
         #Bins and pal for map
         bins <- c(0,0.025,0.1,0.5,1,2.5,5,10,Inf) 
         mypalette <- colorBin( palette="RdBu", domain=spdf$percentage ,bins=bins, pretty=FALSE)
         
-         
+         print(spdf@data$Pickup)
 
         map_plot <- map_plot %>% 
         setMaxBounds(lng1 = -87.999, lat1=41.50, lng2=-87.00412 , lat2=42.380379 ) %>%
@@ -657,7 +703,7 @@ server <- function(input, output, session) {
                     bringToFront = TRUE),
         #popup=labels,
         label = labels,
-        layerId = ~community_shp$Pickup)%>%
+        layerId = ~spdf@data$area_numbe)%>%
         addLegend(pal=mypalette,values= bins,
         position="bottomright", title = "Percentage of Rides(%)",
         opacity = 0.8)
@@ -690,8 +736,8 @@ server <- function(input, output, session) {
         #updating select-input based on map
         click <- input$main_map_shape_click
         community_id <- click$id
-        #print(community_id)
-        #print(community_areas[as.numeric(community_id)])
+        print(community_id)
+        print(community_areas[as.numeric(community_id)])
         isolate(
             updateSelectInput(
                 session, 
@@ -824,7 +870,7 @@ server <- function(input, output, session) {
     output$histBinMile <- renderPlot({
         print("plotting Bin Mile")
         ggplot(bin_reactive_distance(), aes(x = distance_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(x= "Distance", y="Total number of entries", title = paste("Binned by distance for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma)
-        print("plotted Bin Mile")
+        
     })
 
 
