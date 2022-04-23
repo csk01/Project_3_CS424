@@ -4,6 +4,7 @@ library(lubridate)
 library(ggplot2)
 # library(plotly)
 library(leaflet)
+library(leaflet.extras)
 library(dplyr)
 # library(tidyr)
 library(scales)
@@ -15,6 +16,7 @@ library(shinydashboard)
 library(data.table)
 library(purrr)
 library(rgdal)
+library(RColorBrewer)
 
 library(DT)
 
@@ -95,6 +97,17 @@ community_areas <- c("Rogers Park", "West Ridge","Uptown","Lincoln Square","Nort
                      "Brighton Park","McKinley Park","Bridgeport","New City","West Elsdon","Gage Park","Clearing","West Lawn","Chicago Lawn","West Englewood",
                      "Englewood","Greater Grand Crossing","Ashburn","Auburn Gresham","Beverly","Washington Heights","Mount Greenwood","Morgan Park","O'Hare","Edgewater","Outside Chicago", "All of Chicago")
 
+#func to convert NAs in Pickup and Dropoff to 78)
+f_dowle3 = function(DT) {
+
+  for (j in 3:5)
+    set(DT,which(is.na(DT[[j]])),j,78)
+}
+f_dowle3(taxi)
+
+print("Converted NAs to 78")
+print(head(taxi))
+
 years<-c(2001:2021)
 
 time_in_24 <-c( '0000',  '0100', '0200', '0300', '0400', '0500', '0600', '0070', '0080', '0900', '1000', '1100', '1200', '1300', '1400',
@@ -105,17 +118,19 @@ time_in_12 <- c('00:00 am','01:00 am','02:00 am','03:00 am','04:00 am','05:00 am
 months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'Novermber', 'December')
 
 
-
 #defining basic leaflet map to add on to later
 map_plot <- leaflet() %>%
-  addProviderTiles("OpenStreetMap") %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  #addResetMapButton() %>%
+  setMaxBounds(lng1 = -87.999, lat1=41.50, lng2=-87.00412 , lat2=42.380379 ) %>%
+  #-87.94011, lat1=41.619478, lng2=-87.00412 , lat2=42.080379 ) %>%
   addPolygons( data = community_shp,
     color = "#444444",
-    weight = 1, 
+    weight = 3, 
     smoothFactor = 0.5,
      opacity = 1.0,
-     fillOpacity = 0.65,
-     dashArray = "3",
+     fillOpacity = 0.75,
+     dashArray = "2",
      highlightOptions = highlightOptions(color = "white",
      weight = 2,
      dashArray = "",
@@ -189,7 +204,7 @@ ui <- dashboardPage(
                                             box(title = "Heatmap", 
                                                 solidHeader = TRUE,
                                                 status = "primary", 
-                                                width = 12,
+                                                #width = 12,
                                                 plotOutput("histCommunity", height="90vh") 
                                             )
                                         )
@@ -408,6 +423,9 @@ server <- function(input, output, session) {
     outside_chicago <- reactive({
         input$outsideChicago
     })
+    #Val to hold outside chicago percent
+    outside <- reactiveValues()
+
     taxi_company <- reactive({
         return(which(values == input$taxiCompany))
     })
@@ -516,7 +534,47 @@ server <- function(input, output, session) {
 
     })
 
+    shape_reactive <-reactive({
+        comm_df <-comm_reactive()
+        print(comm_df)
+        comm_name <- community()
+        mode <-mode()
+        if(mode() == "Pickup"){
+                print("inside leaflet for pickup mode")
 
+                # Calculating percentage of rides from that comm area
+                ride_percent <- comm_df %>%
+                    group_by(Dropoff) %>%
+                    summarise(n_rides = n())
+
+                ride_percent$percentage <- 100 * (ride_percent$n_rides / sum(ride_percent$n_rides))
+                print(summary(ride_percent))
+                print("percentage calculated")
+
+                # merged spatial df  file to plot heatmap
+                mynewspdf <- merge(community_shp, ride_percent, by.x = "area_numbe", by.y = "Dropoff", all.y = TRUE)
+                
+                temp <- ride_percent %>% filter(Dropoff==78)
+                outside$percentage <- temp$percentage
+                print("merged w shape file")
+            }
+        else{
+            ride_percent <- comm_df %>% 
+            group_by(Pickup) %>% 
+            summarise(n_rides=n())
+            print(summary(ride_percent))
+            ride_percent$percentage <- 100*(ride_percent$n_rides/sum(ride_percent$n_rides))
+            #merged spatial df  file to plot heatmap
+            mynewspdf <- merge(community_shp, ride_percent, by.x="area_numbe", by.y="Pickup" , all=FALSE)
+            
+            temp <- ride_percent %>% filter(Pickup==78)
+            outside$percentage <- temp$percentage
+        }
+        
+        print("rider percent calculated")
+        return(mynewspdf)
+
+    })
 
     bin_reactive_time <- reactive({
         binned_time <- comm_reactive()
@@ -571,22 +629,69 @@ server <- function(input, output, session) {
 
 
 
-    #For the main leaflet plot
+    #leaflet map ================================================================================
     output$main_map <- renderLeaflet({
-        map_plot <- map_plot %>%
-        removeShape(layerId = "selected")
-        return(map_plot)
+        print("inside leaflet map")
+        spdf <- shape_reactive()
+        
+
+        #Bins and pal for map
+        bins <- c(0,0.025,0.1,0.5,1,2.5,5,10,Inf) 
+        mypalette <- colorBin( palette="RdBu", domain=spdf$percentage ,bins=bins, pretty=FALSE)
+        
+         
+
+        map_plot <- map_plot %>% 
+        setMaxBounds(lng1 = -87.999, lat1=41.50, lng2=-87.00412 , lat2=42.380379 ) %>%
+        addPolygons(data = spdf,
+            color = ~mypalette(percentage),
+            weight = 1, 
+            smoothFactor = 0.5,
+            opacity = 1.0,
+            fillOpacity = 0.65,
+            dashArray = "3",
+            stroke = 1,
+            highlightOptions = highlightOptions(color = "white",
+                    weight = 2,
+                    dashArray = "",
+                    bringToFront = TRUE),
+        #popup=labels,
+        label = labels,
+        layerId = ~community_shp$Pickup)%>%
+        addLegend(pal=mypalette,values= bins,
+        position="bottomright", title = "Percentage of Rides(%)",
+        opacity = 0.8)
+        if(outside_chicago()){
+            print(outside$percentage)
+            print(str(outside$percentage))
+            map_plot <- map_plot %>% 
+            addRectangles(
+                lat1 =41.970111, lat2=41.889261,
+                lng1=-87.459141, lng2=-87.553412,
+                fillColor = mypalette(outside$percentage),
+                label = "Outside Chicago",
+                weight = 1, 
+                smoothFactor = 0.5,
+                opacity = 1.0,
+                fillOpacity = 0.65,
+                dashArray = "3",
+                highlightOptions = highlightOptions(color = "white",
+                weight = 2,
+                dashArray = "",
+                bringToFront = TRUE)) 
+        }
+    return(map_plot)
     })
 
     #Change value of Selectize input on map click
     observeEvent(input$main_map_shape_click,{
-        print("Community cicked on map")
+        #print("Community cicked on map")
         
         #updating select-input based on map
         click <- input$main_map_shape_click
         community_id <- click$id
-        print(community_id)
-        print(community_areas[as.numeric(community_id)])
+        #print(community_id)
+        #print(community_areas[as.numeric(community_id)])
         isolate(
             updateSelectInput(
                 session, 
@@ -596,14 +701,10 @@ server <- function(input, output, session) {
     })
   
     
+    #to highlight on select community option
     observeEvent(input$community,{
-        print("select community chosen")
+        #print("select community chosen")
         comm_name <- input$community
-        l <- sprintf(
-            "<strong>%s</strong><br/>",
-            comm_name
-            ) %>% 
-            lapply(htmltools::HTML)
         comm_id <- which(community_areas == comm_name)
         shinyjs::js$shapeClick(comm_id)
         to_highlight <- subset(community_shp, area_numbe == comm_id)
@@ -614,7 +715,7 @@ server <- function(input, output, session) {
                 data = to_highlight, 
                 fill =  "#D24618", 
                 color = "blue", 
-                popup = comm_name
+                #popup = comm_name
             )
     })
   
@@ -654,7 +755,7 @@ server <- function(input, output, session) {
         else{
             g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  
         }
-        print("plotting day of the week")
+        print("plotted day of the week")
         
         return(g)
     
@@ -699,7 +800,7 @@ server <- function(input, output, session) {
         
         # f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
         
-        print("plotting day of the week")
+        print("plotting community % bar plot")
         return(g)
     })
   
@@ -723,6 +824,7 @@ server <- function(input, output, session) {
     output$histBinMile <- renderPlot({
         print("plotting Bin Mile")
         ggplot(bin_reactive_distance(), aes(x = distance_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(x= "Distance", y="Total number of entries", title = paste("Binned by distance for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma)
+        print("plotted Bin Mile")
     })
 
 
