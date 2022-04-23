@@ -15,6 +15,7 @@ library(shinydashboard)
 library(data.table)
 library(purrr)
 library(rgdal)
+library(RColorBrewer)
 
 library(DT)
 
@@ -165,7 +166,7 @@ ui <- dashboardPage(
                                             inline = FALSE,
                                             width = NULL
                                         ),
-                                        selectInput(inputId = "community", label = "Select community", choices = sort(community_areas), selected="All of Chicago"),
+                                        selectInput(inputId = "community", label = "Select community", choices = sort(community_areas), selected="Chicago"),
                                         selectInput(inputId = "taxiCompany", label = "Select Taxi Company", choices = sort(values), selected = "All"),
                                         radioButtons(
                                             inputId = "radioTime",
@@ -413,6 +414,7 @@ server <- function(input, output, session) {
     })
 
 
+
     comm_reactive <- reactive({
         if(community() != 79 && taxi_company() != 59){
 
@@ -516,7 +518,40 @@ server <- function(input, output, session) {
 
     })
 
+    shape_reactive <-reactive({
+        comm_df <-comm_reactive()
+        comm_name <- community()
+        mode <-mode()
+        if(mode() == "Pickup"){
+                print("inside leaflet for pickup mode")
 
+                # Calculating percentage of rides from that comm area
+                ride_percent <- comm_df %>%
+                    group_by(Dropoff) %>%
+                    summarise(n_rides = n())
+
+                ride_percent$percentage <- 100 * (ride_percent$n_rides / sum(ride_percent$n_rides))
+                print(summary(ride_percent))
+                print("percentage calculated")
+
+                # merged spatial df  file to plot heatmap
+                mynewspdf <- merge(community_shp, ride_percent, by.x = "area_numbe", by.y = "Dropoff", all = FALSE)
+
+                print("merged w shape file")
+            }
+        else{
+            ride_percent <- comm_df %>% 
+            group_by(Pickup) %>% 
+            summarise(n_rides=n())
+            print(summary(ride_percent))
+            ride_percent$percentage <- 100*(ride_percent$n_rides/sum(ride_percent$n_rides))
+            #merged spatial df  file to plot heatmap
+            mynewspdf <- merge(community_shp, ride_percent, by.x="area_numbe", by.y="Pickup" , all=FALSE)
+        }
+        print("rider percnt calculated")
+        return(mynewspdf)
+
+    })
 
     bin_reactive_time <- reactive({
         binned_time <- comm_reactive()
@@ -571,11 +606,36 @@ server <- function(input, output, session) {
 
 
 
-    #For the main leaflet plot
+    #leaflet map ================================================================================
     output$main_map <- renderLeaflet({
-        map_plot <- map_plot %>%
-        removeShape(layerId = "selected")
-        return(map_plot)
+        print("inside leaflet map")
+        spdf <- shape_reactive()
+        print("hey")
+        #Bins and pal for map
+        bins <- c(0.001, 0.010, 0.100, 1.00,2.00,10,Inf) 
+        mypalette <- colorBin( palette="RdBu", domain=spdf$percentage ,bins=bins, pretty=FALSE)
+        print("hey hey")
+        map_plot <- map_plot %>% 
+        addPolygons(data = spdf,
+        color = ~mypalette(percentage),
+        weight = 1, 
+        smoothFactor = 0.5,
+        opacity = 1.0,
+        fillOpacity = 0.65,
+        dashArray = "3",
+        highlightOptions = highlightOptions(color = "white",
+                weight = 2,
+                dashArray = "",
+                bringToFront = TRUE),
+        
+        #popup=labels,
+        label = labels,
+        layerId = ~community_shp$Pickup)%>%
+        addLegend(pal=mypalette,values= bins,position="bottomright")
+        # addRectangles(
+        #     lat1=41.970111, lat2=41.889261,
+        #     lng1=-87.459141, lng=-87.553412)
+    #return(map)
     })
 
     #Change value of Selectize input on map click
@@ -596,14 +656,10 @@ server <- function(input, output, session) {
     })
   
     
+    #to highlight on select community option
     observeEvent(input$community,{
         print("select community chosen")
         comm_name <- input$community
-        l <- sprintf(
-            "<strong>%s</strong><br/>",
-            comm_name
-            ) %>% 
-            lapply(htmltools::HTML)
         comm_id <- which(community_areas == comm_name)
         shinyjs::js$shapeClick(comm_id)
         to_highlight <- subset(community_shp, area_numbe == comm_id)
@@ -614,7 +670,7 @@ server <- function(input, output, session) {
                 data = to_highlight, 
                 fill =  "#D24618", 
                 color = "blue", 
-                popup = comm_name
+                #popup = comm_name
             )
     })
   
