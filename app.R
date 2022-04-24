@@ -119,7 +119,7 @@ years<-c(2001:2021)
 time_in_24 <-c( '0000',  '0100', '0200', '0300', '0400', '0500', '0600', '0070', '0080', '0900', '1000', '1100', '1200', '1300', '1400',
                 '1500', '1600', '1700', '1800', '1900', '2000', '2100', '2200', '2300' )
 
-time_in_12 <- c('00:00 am','01:00 am','02:00 am','03:00 am','04:00 am','05:00 am','06:00 am','07:00 am','08:00 am','09:00 am','10:00 am','11:00 am','12:00 pm','01:00 pm','02:00 pm','03:00 pm','04:00 pm','05:00 pm','06:00 pm','07:00 pm','08:00 pm','09:00 pm','10:00 pm','11:00 pm')
+time_in_12 <- c('12:00 am','01:00 am','02:00 am','03:00 am','04:00 am','05:00 am','06:00 am','07:00 am','08:00 am','09:00 am','10:00 am','11:00 am','12:00 pm','01:00 pm','02:00 pm','03:00 pm','04:00 pm','05:00 pm','06:00 pm','07:00 pm','08:00 pm','09:00 pm','10:00 pm','11:00 pm')
 
 months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'Novermber', 'December')
 
@@ -170,9 +170,7 @@ ui <- dashboardPage(
                         tabItems(
                             tabItem(
                                 tabName = "dashboard",
-                                fluidRow(
-                                    textOutput("selectedVar")
-                                ),
+                                
                                 fluidRow(
                                     shinyjs::useShinyjs(),
                                     shinyjs::extendShinyjs(text = jsCode, functions = c('shapeClick')),
@@ -806,11 +804,11 @@ observe({
 
     output$histCommunity <- renderPlot({
             if(outside_chicago()){
-                taxi <- (taxi_outside)
                 look_up <- community_areas_outside
+                taxi <- taxi_outside
             }else{
-                taxi <- taxi_inside
                 look_up <- community_areas
+                taxi <- taxi_inside
             }
 
             if(input$radioMode=="To"){
@@ -828,10 +826,10 @@ observe({
                 communityDF <- communityDF %>% mutate(Dropoff = look_up[Dropoff] )
                 g<- ggplot(communityDF, aes(x= factor(Dropoff), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   + coord_flip()
             }
-
+           
                  
             if(dim(communityDF)[1]>0){
-                g <- g +scale_x_discrete(guide=guide_axis(angle =45))
+                g <- g +scale_x_discrete(guide=guide_axis(angle =0))
             }
             
         
