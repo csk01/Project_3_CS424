@@ -49,7 +49,8 @@ taxi_inside <- taxi_original[Pickup>=1 & Dropoff >=1]
 community_shp <- rgdal::readOGR("shp_files/geo_export_fca70ba1-774b-4562-b299-3cbfe3855c4d.shp",
                                 layer = "geo_export_fca70ba1-774b-4562-b299-3cbfe3855c4d", GDAL1_integer64_policy = TRUE)
 
-
+# new_row<-c(0, 79, 79, 0 , 0, 'Outside Chicago', 0, 0, 0)
+# community_shp@data[nrow(community_shp) + 1,] <- new_row
 
 #labels for each community 
 labels <- sprintf(
@@ -128,6 +129,7 @@ days_in_week <- c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday
 map_plot <- leaflet() %>%
   addProviderTiles("CartoDB.Positron") %>%
   #addResetMapButton() %>%
+  addResetMapButton() %>%
   setMaxBounds(lng1 = -87.999, lat1=41.50, lng2=-87.00412 , lat2=42.380379 ) %>%
   #-87.94011, lat1=41.619478, lng2=-87.00412 , lat2=42.080379 ) %>%
   addPolygons( data = community_shp,
@@ -207,6 +209,7 @@ ui <- dashboardPage(
                                         )
                                     ),
                                     column(1,
+                                        id="histcontainer",
                                         column(12,
                                             box(title = "% rides", 
                                                 solidHeader = TRUE,
@@ -377,6 +380,7 @@ ui <- dashboardPage(
 ####jump to reactive
 server <- function(input, output, session) {
 
+
     mode <- reactive({
         if(input$radioMode == "To") return("Dropoff") else return("Pickup")
     })
@@ -428,6 +432,11 @@ observe({
             taxi <- (taxi_outside)
         }else{
             taxi <- taxi_inside
+        }
+        if(input$community == "All of Chicago" & input$taxiCompany == "All"){
+                shinyjs::hide(id = "histcontainer")
+        }else{
+                shinyjs::show(id = "histcontainer")
         }
         if(community() != 78 && taxi_company() != 57){
 
@@ -549,9 +558,9 @@ observe({
 
 
                 # merged spatial df  file to plot heatmap
-                mynewspdf <- merge(community_shp, ride_percent, by.x = "area_numbe", by.y = "Dropoff", all = FALSE)
+                mynewspdf <- merge(community_shp, ride_percent, by.x = "area_numbe", by.y = "Dropoff", all = TRUE)
                 
-                temp <- ride_percent %>% filter(Dropoff==78)
+                temp <- ride_percent %>% filter(Dropoff==79)
                 outside$percentage <- temp$percentage
                 
             }
@@ -562,9 +571,9 @@ observe({
             
             ride_percent$percentage <- 100*(ride_percent$n_rides/sum(ride_percent$n_rides))
             #merged spatial df  file to plot heatmap
-            mynewspdf <- merge(community_shp, ride_percent, by.x="area_numbe", by.y="Pickup" , all=FALSE)
+            mynewspdf <- merge(community_shp, ride_percent, by.x="area_numbe", by.y="Pickup" , all=TRUE)
             
-            temp <- ride_percent %>% filter(Pickup==78)
+            temp <- ride_percent %>% filter(Pickup==79)
             outside$percentage <- temp$percentage
         }
         
@@ -624,17 +633,50 @@ observe({
 
 
 
-    #leaflet map ================================================================================
+     #leaflet map ================================================================================
     output$main_map <- renderLeaflet({
-        
+        print("inside leaflet map")
+
         spdf <- shape_reactive()
         
-        
+        # print()
         #Bins and pal for map
         bins <- c(0,0.025,0.1,0.5,1,2.5,5,10,Inf) 
-        mypalette <- colorBin( palette="RdBu", domain=spdf$percentage ,bins=bins, pretty=FALSE)
+        # mypalette <- colorBin( palette="RdYlGn", domain=spdf$percentage ,bins=bins, pretty=FALSE)
+        # NAcol = mypalette(0)
+        # mypalette <- colorBin( palette="RdYlGn", domain=spdf$percentage ,bins=bins, pretty=FALSE, na.color = NAcol)
+
+        mypalette <- colorBin( palette="RdYlGn", domain=spdf$percentage ,bins=bins, pretty=FALSE)
+        NAcol = mypalette(0)
+        mypalette <- colorBin( palette="RdYlGn", domain=spdf$percentage ,bins=bins, pretty=FALSE, na.color = NAcol)
+
+        if(community() == 78 && taxi_company() == 57)
+        {
+          print("all commty, all company selected")
+          map<- map_plot 
+          if(outside_chicago()){
+            map <- map %>% addRectangles(
+                lat1 =41.970111, lat2=41.889261,
+                lng1=-87.459141, lng2=-87.553412,
+                fillColor = '#444444',
+                label = "Outside Chicago",
+                weight = 1, 
+                layerId=79,
+                smoothFactor = 0.5,
+                opacity = 1.0,
+                fillOpacity = 0.65,
+                dashArray = "3",
+                highlightOptions = highlightOptions(color = "white",
+                weight = 2,
+                dashArray = "",
+                bringToFront = TRUE)) 
+          }
+          return(map)
+        }
         
-         
+       
+
+         print(spdf@data$Pickup)
 
         map_plot <- map_plot %>% 
         setMaxBounds(lng1 = -87.999, lat1=41.50, lng2=-87.00412 , lat2=42.380379 ) %>%
@@ -656,9 +698,10 @@ observe({
         addLegend(pal=mypalette,values= bins,
         position="bottomright", title = "Percentage of Rides(%)",
         opacity = 0.8)
+        
         if(outside_chicago()){
-            
-            
+            print("outside percent val")
+            print(outside$percentage)
             map_plot <- map_plot %>% 
             addRectangles(
                 lat1 =41.970111, lat2=41.889261,
@@ -685,8 +728,8 @@ observe({
         #updating select-input based on map
         click <- input$main_map_shape_click
         community_id <- click$id
-        
-        
+        print(community_id)
+        print(community_areas[as.numeric(community_id)])
         isolate(
             updateSelectInput(
                 session, 
@@ -694,6 +737,8 @@ observe({
                 selected = community_areas[as.numeric(community_id)])
         )
     })
+  
+    
   
     
     #to highlight on select community option
@@ -714,7 +759,6 @@ observe({
             )
     })
   
-
 
     output$histHourly <- renderPlot({
    
