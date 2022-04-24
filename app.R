@@ -38,18 +38,18 @@ options(scipen=999)
 # READ DATA AND CONVERT TO USABLE FORMAT=======================================================================================================
 
 #Reading from the split csv files
-print("reading data")
+
 taxi_original <- do.call(rbind, lapply(list.files(pattern = "*.csv"), fread)) 
 taxi_outside <- taxi_original
 taxi_inside <- taxi_original[Pickup>=1 & Dropoff >=1]
-print("read data")
+
 
 #Reading community boundaries from a shape file 
 # Source: https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Community-Areas-current-/cauq-8yn6
 community_shp <- rgdal::readOGR("shp_files/geo_export_fca70ba1-774b-4562-b299-3cbfe3855c4d.shp",
                                 layer = "geo_export_fca70ba1-774b-4562-b299-3cbfe3855c4d", GDAL1_integer64_policy = TRUE)
 
-print("read shp file")
+
 
 #labels for each community 
 labels <- sprintf(
@@ -112,8 +112,6 @@ f_dowle3 = function(DT) {
 }
 f_dowle3(taxi_outside)
 
-# print("Converted NAs to 78")
-# print(head(taxi_outside))
 
 years<-c(2001:2021)
 
@@ -210,7 +208,7 @@ ui <- dashboardPage(
                                     ),
                                     column(1,
                                         column(12,
-                                            box(title = "Heatmap", 
+                                            box(title = "% rides", 
                                                 solidHeader = TRUE,
                                                 status = "primary", 
                                                 #width = 12,
@@ -535,27 +533,19 @@ observe({
 
     shape_reactive <-reactive({
         comm_df <-comm_reactive()
-        print(comm_df)
+        
         comm_name <- community()
         if(mode() == "Pickup"){
-                print("inside leaflet for pickup mode")
+                
 
-                # Calculating percentage of rides from that comm area
-                # ride_percent <- comm_df %>%
-                #     group_by(Dropoff) %>%
-                #     summarise(n_rides = n())
-
-                # ride_percent$percentage <- 100 * (ride_percent$n_rides / sum(ride_percent$n_rides))
+                
                 
 
                 ride_percent <- comm_df
                 total_rides <- count(ride_percent)
                 ride_percent <- ride_percent[, .N, by=Dropoff]    
                 ride_percent <- ride_percent[, percentage:=((N/as.integer(total_rides) )*100)]
-                print("#########################################################")
-                print(summary(ride_percent))
-                print("percentage calculated")
-
+                
 
 
                 # merged spatial df  file to plot heatmap
@@ -563,14 +553,13 @@ observe({
                 
                 temp <- ride_percent %>% filter(Dropoff==78)
                 outside$percentage <- temp$percentage
-                print("merged w shape file")
-                print(head(mynewspdf@data))
+                
             }
         else{
             ride_percent <- comm_df %>% 
             group_by(Pickup) %>% 
             summarise(n_rides=n())
-            print(summary(ride_percent))
+            
             ride_percent$percentage <- 100*(ride_percent$n_rides/sum(ride_percent$n_rides))
             #merged spatial df  file to plot heatmap
             mynewspdf <- merge(community_shp, ride_percent, by.x="area_numbe", by.y="Pickup" , all=FALSE)
@@ -579,7 +568,7 @@ observe({
             outside$percentage <- temp$percentage
         }
         
-        print("rider percent calculated")
+        
         return(mynewspdf)
 
     })
@@ -605,14 +594,14 @@ observe({
   
 
     output$hist1 <- renderPlot({
-        print("Daily plot")
+        
     
         g<- ggplot(
             data = daily_reactive(), 
             aes(x = Date, y = N)) +
             geom_bar(
                 stat="identity", 
-                fill="steelblue", 
+                fill="deepskyblue4", 
                 width=0.9) +
             labs(
                 title = paste("Taxi Rides per Day, 2019 for ", input$community, " community & " ,input$taxiCompany, " service provider" ),
@@ -621,7 +610,7 @@ observe({
                 scale_x_date(date_labels = "%d-%b", breaks = date_breaks("months"),date_minor_breaks="days" ) +
                 scale_y_continuous(labels = scales::comma)   
     
-        print("plotted daily plot")
+        
         return(g)
     })
   
@@ -637,15 +626,15 @@ observe({
 
     #leaflet map ================================================================================
     output$main_map <- renderLeaflet({
-        print("inside leaflet map")
+        
         spdf <- shape_reactive()
         
-        # print()
+        
         #Bins and pal for map
         bins <- c(0,0.025,0.1,0.5,1,2.5,5,10,Inf) 
         mypalette <- colorBin( palette="RdBu", domain=spdf$percentage ,bins=bins, pretty=FALSE)
         
-         print(spdf@data$Pickup)
+         
 
         map_plot <- map_plot %>% 
         setMaxBounds(lng1 = -87.999, lat1=41.50, lng2=-87.00412 , lat2=42.380379 ) %>%
@@ -668,8 +657,8 @@ observe({
         position="bottomright", title = "Percentage of Rides(%)",
         opacity = 0.8)
         if(outside_chicago()){
-            print(outside$percentage)
-            print(str(outside$percentage))
+            
+            
             map_plot <- map_plot %>% 
             addRectangles(
                 lat1 =41.970111, lat2=41.889261,
@@ -696,8 +685,8 @@ observe({
         #updating select-input based on map
         click <- input$main_map_shape_click
         community_id <- click$id
-        print(community_id)
-        print(community_areas[as.numeric(community_id)])
+        
+        
         isolate(
             updateSelectInput(
                 session, 
@@ -731,7 +720,7 @@ observe({
    
 
         g <-ggplot(data = hourly_reactive(), aes(x = factor(Hour), y = N)) +
-            geom_bar(stat="identity", fill="steelblue") +
+            geom_bar(stat="identity", fill="deepskyblue4") +
             labs(
                 title = paste("", input$community, " community & " ,input$taxiCompany, " service provider" ),
                 x = "Hour", 
@@ -746,7 +735,7 @@ observe({
                 g <- g + scale_x_discrete(labels = time_in_24, guide=guide_axis( angle = 45)) + scale_y_continuous(labels = scales::comma) 
             }
         }
-        print("plotted hourly")
+        
 
         return(g)
 
@@ -761,7 +750,7 @@ observe({
         else{
             g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  
         }
-        print("plotted day of the week")
+        
         
         return(g)
     
@@ -786,14 +775,14 @@ observe({
                 communityDF <- communityDF[, .N, by=Pickup]    
                 communityDF <- communityDF[, Percentage:=((N/as.integer(total_rides) )*100)]
                 communityDF <- communityDF %>% mutate(Pickup = look_up[Pickup] )
-                g<- ggplot(communityDF, aes(x= factor(Pickup), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  # + coord_flip()
+                g<- ggplot(communityDF, aes(x= factor(Pickup), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   + coord_flip()
             }else{
                 communityDF <- taxi[Pickup == community()]
                 total_rides <- count(communityDF)
                 communityDF <- communityDF[, .N, by=Dropoff]
                 communityDF <- communityDF[, Percentage:=((N/as.integer(total_rides))*100)]
                 communityDF <- communityDF %>% mutate(Dropoff = look_up[Dropoff] )
-                g<- ggplot(communityDF, aes(x= factor(Dropoff), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   #+ coord_flip()
+                g<- ggplot(communityDF, aes(x= factor(Dropoff), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   + coord_flip()
             }
 
                  
@@ -806,7 +795,7 @@ observe({
         
         # f <- factor(weekdays(taxi$Date), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
         
-        print("plotting community % bar plot")
+        
         return(g)
     })
   
@@ -821,26 +810,26 @@ observe({
             g <- ggplot(month_reactive(), aes(x= factor(newMonth), y= N)) +labs(x="Month ", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4") 
         }
         
-        print("plotting monthly")
+        
         return(g)
     })
   
   
   # *1.609
     output$histBinMile <- renderPlot({
-        print("plotting Bin Mile")
-        ggplot(bin_reactive_distance(), aes(x = distance_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(x= "Distance", y="Total number of entries", title = paste("Binned by distance for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma)
+        
+        ggplot(bin_reactive_distance(), aes(x = distance_bin, y=N)) + geom_bar(stat="identity", fill="deepskyblue4") + labs(x= "Distance", y="Total number of entries", title = paste("Binned by distance for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma)
         
     })
 
 
     output$histTripTime <- renderPlot({
-        print("plotting Bin Trip")
+        
         binned_time_local <- bin_reactive_time()
         if(dim(binned_time_local)[1] == 0){
-            ggplot(binned_time_local, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(x= "Time", y="Total number of entries", title = paste("Binned by time for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma) 
+            ggplot(binned_time_local, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="deepskyblue4") + labs(x= "Time", y="Total number of entries", title = paste("Binned by time for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma) 
         }else{
-            ggplot(binned_time_local, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="steelblue") + labs(x= "Time", y="Total number of entries", title = paste("Binned by time for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma) + scale_x_discrete(guide=guide_axis(angle =45))
+            ggplot(binned_time_local, aes(x = time_bin, y=N)) + geom_bar(stat="identity", fill="deepskyblue4") + labs(x= "Time", y="Total number of entries", title = paste("Binned by time for", input$community, " community & " ,input$taxiCompany, " service provider" )) + scale_y_continuous(labels = scales::comma) + scale_x_discrete(guide=guide_axis(angle =45))
         }
       })
   
