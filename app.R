@@ -120,7 +120,7 @@ years<-c(2001:2021)
 time_in_24 <-c( '0000',  '0100', '0200', '0300', '0400', '0500', '0600', '0070', '0080', '0900', '1000', '1100', '1200', '1300', '1400',
                 '1500', '1600', '1700', '1800', '1900', '2000', '2100', '2200', '2300' )
 
-time_in_12 <- c('00:00 am','01:00 am','02:00 am','03:00 am','04:00 am','05:00 am','06:00 am','07:00 am','08:00 am','09:00 am','10:00 am','11:00 am','12:00 pm','13:00 pm','14:00 pm','15:00 pm','16:00 pm','17:00 pm','18:00 pm','19:00 pm','20:00 pm','21:00 pm','22:00 pm','23:00 pm')
+time_in_12 <- c('00:00 am','01:00 am','02:00 am','03:00 am','04:00 am','05:00 am','06:00 am','07:00 am','08:00 am','09:00 am','10:00 am','11:00 am','12:00 pm','01:00 pm','02:00 pm','03:00 pm','04:00 pm','05:00 pm','06:00 pm','07:00 pm','08:00 pm','09:00 pm','10:00 pm','11:00 pm')
 
 months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'Novermber', 'December')
 
@@ -213,7 +213,7 @@ ui <- dashboardPage(
                                                 solidHeader = TRUE,
                                                 status = "primary", 
                                                 #width = 12,
-                                                plotOutput("histCommunity", height="90vh") 
+                                                plotOutput("histCommunityold", height="90vh") 
                                             )
                                         )
                                     ),
@@ -356,55 +356,30 @@ ui <- dashboardPage(
                             ),
                             tabItem(tabName="yearlyPlots",
                                 fluidRow(
-                                    column(2,
-                                        fluidRow(style="height:40vh"),
-                                        p("Input controls"),
-                                        selectInput("years", "Select the year", years, selected = "2021"),
-                                        selectInput(inputId = "yearly_station", label = "Select station", choices = NULL),
-                                        selectInput("order_for_single", "Select chart Type", c("BarPlot", "Table"), selected = "BarPlot")
-                                    ),
-                                    column(10,
-                                         column(6,
+                                    
+                                    column(12,
+                                         column(12,
                                                 box( 
                                                     title = "Binned Trip Time", 
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 12,
-                                                    plotOutput("histCommunityOld", height="34vh"), 
-                                                    height="40vh"
+                                                    plotOutput("histCommunity", height="34vh"), 
+                                                    height="80vh"
                                                 ), 
-                                                height="40vh"
-                                            ),
-                                        column(4,
-                                            fluidRow(
-                                                column(12, 
-                                                    box( title = "Yearly entries", solidHeader = TRUE, status = "primary", width = 12,
-                                                        plotOutput("yearly"), dataTableOutput("tableYearly")
-                                                    )
-                                                )
-                                            ),
-                                            fluidRow(
-                                                column(6,
-                                                    box( title = "Monthly entries", solidHeader = TRUE, status = "primary", width = 12,
-                                                        plotOutput("monthly"), dataTableOutput("tableMonthly")
-                                                    )
-                                                ),
-                                                column(6, 
-                                                    box( title = "Day of Week entries", solidHeader = TRUE, status = "primary", width = 12,
-                                                        plotOutput("weekly"), dataTableOutput("tableWeekly")
-                                                    )
-                                                )
+                                                height="80vh"
                                             )
-                                        )
+                                        
                                     )
                                 )
                             ),
                             tabItem(
                                 tabName= "about",
                                 h2("About"), 
-                                p("Application written by Gautam Kushwah & Add your name here for CS424 spring 2022 taught by Dr. Andrew Johnson"),
-                                p("Data taken from https://data.cityofchicago.org/Transportation/CTA-Ridership-L-Station-Entries-Daily-Totals/5neh-572f"),
-                                p("The app helps visualize CTA L data over the last 20 years and helps uncover trends in data"),
+                                p("Application written by Gautam Kushwah & Krishnan C. S. for CS424 spring 2022 taught by Dr. Andrew Johnson"),
+                                p("Data taken from the following sources"),
+                                p("")
+                                p("The app helps visualize Chicago Taxi Data data for the year 2019 years based on community names and taxi companies and helps uncover trends in data"),
                                 p("Reference for R functions through https://shiny.rstudio.com/reference/shin")
                             )
                         )
@@ -811,8 +786,10 @@ observe({
     output$histCommunity <- renderPlot({
             if(outside_chicago()){
                 taxi <- (taxi_outside)
+                look_up <- community_areas_outside
             }else{
                 taxi <- taxi_inside
+                look_up <- community_areas
             }
 
             if(input$radioMode=="To"){
@@ -820,15 +797,15 @@ observe({
                 total_rides <- count(communityDF)
                 communityDF <- communityDF[, .N, by=Pickup]    
                 communityDF <- communityDF[, Percentage:=((N/as.integer(total_rides) )*100)]
-                communityDF <- communityDF %>% mutate(Pickup = community_areas[Pickup] )
-                g<- ggplot(communityDF, aes(x= factor(Pickup), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   + coord_flip()
+                communityDF <- communityDF %>% mutate(Pickup = look_up[Pickup] )
+                g<- ggplot(communityDF, aes(x= factor(Pickup), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  # + coord_flip()
             }else{
                 communityDF <- taxi[Pickup == community()]
                 total_rides <- count(communityDF)
                 communityDF <- communityDF[, .N, by=Dropoff]
                 communityDF <- communityDF[, Percentage:=((N/as.integer(total_rides))*100)]
-                communityDF <- communityDF %>% mutate(Dropoff = community_areas[Dropoff] )
-                g<- ggplot(communityDF, aes(x= factor(Dropoff), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   + coord_flip()
+                communityDF <- communityDF %>% mutate(Dropoff = look_up[Dropoff] )
+                g<- ggplot(communityDF, aes(x= factor(Dropoff), y=Percentage)) +labs(x="Community", y="Total number of entries") + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")   #+ coord_flip()
             }
 
                  
@@ -899,17 +876,26 @@ observe({
         datatable(DT, 
                   options = list(
                     searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
+
                     columnDefs = list(list(width = '200px', targets = "_all"))
                   )) %>% 
         formatCurrency(2, currency = "", interval = 3, mark = ",")
       })
   
     output$hourlyTable <- renderDataTable({
-        datatable(hourly_reactive(), 
+        hourly_table <- hourly_reactive()
+        if(time_format()=="12HR"){
+            hourly_table <- hourly_table %>% mutate(Hour = time_in_12[Hour+1] )    
+        }else{
+            hourly_table <- hourly_table %>% mutate(Hour = time_in_24[Hour+1] )    
+        }
+        
+        datatable(hourly_table, 
+                  colnames=c("Time", "Entries"),
                   options = list(
-                    searching = FALSE,pageLength = 5, lengthMenu = c(5, 10, 15),
+                    searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
                     columnDefs = list(list(width = '200px', targets = "_all"))
-                  )) %>% 
+                  ))  %>% 
         formatCurrency(2, currency = "", interval = 3, mark = ",")
     })
   
