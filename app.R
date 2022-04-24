@@ -124,6 +124,7 @@ time_in_12 <- c('00:00 am','01:00 am','02:00 am','03:00 am','04:00 am','05:00 am
 
 months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'Novermber', 'December')
 
+days_in_week <- c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')
 
 #defining basic leaflet map to add on to later
 map_plot <- leaflet() %>%
@@ -213,7 +214,7 @@ ui <- dashboardPage(
                                                 solidHeader = TRUE,
                                                 status = "primary", 
                                                 #width = 12,
-                                                plotOutput("histCommunityold", height="90vh") 
+                                                plotOutput("histCommunity", height="90vh") 
                                             )
                                         )
                                     ),
@@ -233,6 +234,7 @@ ui <- dashboardPage(
                                             ),
                                             column(1,
                                                 box(
+                                                    title= "Daily Entries Table",
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 180,
@@ -272,6 +274,7 @@ ui <- dashboardPage(
                                             ),
                                             column(1,
                                                 box(
+                                                    title="DOW Table",
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 180,
@@ -303,6 +306,7 @@ ui <- dashboardPage(
                                             ),
                                             column(1,
                                                 box(
+                                                    title="Monthly Table",
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 180,
@@ -323,6 +327,7 @@ ui <- dashboardPage(
                                             ),
                                             column(1,
                                                 box(
+                                                    title = "Mileage Table",
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 180,
@@ -343,6 +348,7 @@ ui <- dashboardPage(
                                             ),
                                             column(1,
                                                 box(
+                                                    title = "Trip Time Table",
                                                     solidHeader = TRUE, 
                                                     status = "primary", 
                                                     width = 180,
@@ -354,33 +360,15 @@ ui <- dashboardPage(
                                     )
                                 )
                             ),
-                            tabItem(tabName="yearlyPlots",
-                                fluidRow(
-                                    
-                                    column(12,
-                                         column(12,
-                                                box( 
-                                                    title = "Binned Trip Time", 
-                                                    solidHeader = TRUE, 
-                                                    status = "primary", 
-                                                    width = 12,
-                                                    plotOutput("histCommunity", height="34vh"), 
-                                                    height="80vh"
-                                                ), 
-                                                height="80vh"
-                                            )
-                                        
-                                    )
-                                )
-                            ),
                             tabItem(
                                 tabName= "about",
                                 h2("About"), 
                                 p("Application written by Gautam Kushwah & Krishnan C. S. for CS424 spring 2022 taught by Dr. Andrew Johnson"),
                                 p("Data taken from the following sources"),
-                                p("")
+                                p("1. Community Shape Files - Chicago data portal - https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Community-Areas-current-/cauq-8yn6"),
+                                p("2. Chicago Taxi Trips data - https://data.cityofchicago.org/Transportation/Taxi-Trips-2019/h4cq-z3dy"),
                                 p("The app helps visualize Chicago Taxi Data data for the year 2019 years based on community names and taxi companies and helps uncover trends in data"),
-                                p("Reference for R functions through https://shiny.rstudio.com/reference/shin")
+                                p("Reference for R functions through https://shiny.rstudio.com/reference/shiny")
                             )
                         )
                     )
@@ -768,7 +756,7 @@ observe({
     output$histDay <- renderPlot({
     
         if(dim(weekday_reactive())[1] != 0){
-           g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = c('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), guide=guide_axis( angle = 45)) 
+           g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  + scale_x_discrete(labels = days_in_week, guide=guide_axis( angle = 45)) 
         }
         else{
             g <- ggplot(weekday_reactive(), aes(x= factor(weekday), y=N)) +labs(x="Days of the week", y="Total number of entries", title=paste("", input$community, " community & " ,input$taxiCompany, " service provider" )) + geom_bar(stat="identity", position="dodge", fill="deepskyblue4")  
@@ -891,7 +879,7 @@ observe({
         }
         
         datatable(hourly_table, 
-                  colnames=c("Time", "Entries"),
+                  colnames=c("Time", "Total Entries"),
                   options = list(
                     searching = FALSE,pageLength = 10, lengthMenu = c(5, 10, 15),
                     columnDefs = list(list(width = '200px', targets = "_all"))
@@ -901,11 +889,13 @@ observe({
   
   
     output$dayTable <- renderDataTable({
-        
-        datatable(weekday_reactive(), 
+        weekday_table <- weekday_reactive()
+        weekday_table <- weekday_table[order(weekday_table$weekday),]
+        weekday_table <- weekday_table %>% mutate(weekday = days_in_week[weekday] )    
+        datatable(weekday_table, 
                   options = list(
                     searching = FALSE,pageLength = 7, lengthMenu = c(5, 10, 15),
-                    order = list(list(1, 'asc')),
+                    # order = list(list(2, 'asc')),
                     columnDefs = list(list(width = '200px', targets = "_all"))
                   )) %>% 
         formatCurrency(2, currency = "", interval = 3, mark = ",")
@@ -913,11 +903,14 @@ observe({
 
   
     output$monthlyTable <- renderDataTable({
-  
-        datatable(month_reactive(), 
+        monthly_table <- month_reactive()
+        monthly_table <- monthly_table[order(monthly_table$newMonth),]
+        monthly_table <- monthly_table %>% mutate(newMonth = factor(months[newMonth]) )
+        datatable(monthly_table, 
+                  colnames=c("Month", "Total Entries"),
                   options = list(
                     searching = FALSE,pageLength = 12,
-                    order = list(list(1, 'asc')),
+                    # order = list(list(2, 'asc')),
                     columnDefs = list(list(width = '200px', targets = "_all"))
                   )) %>% 
         formatCurrency(2, currency = "", interval = 3, mark = ",")
